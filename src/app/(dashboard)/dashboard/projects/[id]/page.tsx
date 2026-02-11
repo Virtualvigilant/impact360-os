@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { supabaseClient } from '@/lib/supabase/client';
-import { ProjectAssignment, Submission } from '@/types/database.types';
+import { ProjectAssignment, Submission, Evaluation } from '@/types/database.types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,10 +12,11 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, ArrowLeft, Github, Globe, CheckCircle2 } from 'lucide-react';
+import { Loader2, ArrowLeft, Github, Globe, CheckCircle2, Star, Trophy } from 'lucide-react';
 import { formatDate } from '@/lib/utils/format';
-import { DIFFICULTY_COLORS, DIFFICULTY_LABELS } from '@/lib/utils/constants';
+import { DIFFICULTY_COLORS, DIFFICULTY_LABELS, EVALUATION_CRITERIA } from '@/lib/utils/constants';
 import Link from 'next/link';
+import { notifyAdminsAndMentors } from '@/lib/utils/notifications';
 
 export default function ProjectDetailPage() {
     const params = useParams();
@@ -23,6 +24,7 @@ export default function ProjectDetailPage() {
     const { profile } = useAuth();
     const [assignment, setAssignment] = useState<ProjectAssignment | null>(null);
     const [submission, setSubmission] = useState<Submission | null>(null);
+    const [evaluation, setEvaluation] = useState<Evaluation | null>(null);
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -77,6 +79,17 @@ export default function ProjectDetailPage() {
                         demo_url: submissionData.demo_url || '',
                         notes: submissionData.notes || '',
                     });
+
+                    // Fetch evaluation
+                    const { data: evaluationData } = await supabase
+                        .from('evaluations')
+                        .select('*')
+                        .eq('submission_id', submissionData.id)
+                        .single();
+
+                    if (evaluationData) {
+                        setEvaluation(evaluationData);
+                    }
                 }
             }
         } catch (error) {
@@ -155,6 +168,15 @@ export default function ProjectDetailPage() {
                 .eq('id', assignment.id);
 
             if (updateError) throw updateError;
+
+            // Notify admins and mentors
+            await notifyAdminsAndMentors(
+                supabase,
+                'New Project Submission',
+                `${profile.full_name || 'A student'} has submitted their work for ${assignment.project?.title}`,
+                'project_submission',
+                submissionData.id
+            );
 
             setSuccess(true);
             setSubmission(submissionData);
@@ -297,6 +319,63 @@ export default function ProjectDetailPage() {
                     )}
                 </CardContent>
             </Card>
+
+            {/* Evaluation Results */}
+            {evaluation && (
+                <Card className="border-primary/20 bg-primary/5">
+                    <CardHeader>
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <CardTitle className="flex items-center gap-2">
+                                    <Trophy className="h-5 w-5 text-yellow-500" />
+                                    Evaluation Results
+                                </CardTitle>
+                                <CardDescription>
+                                    Evaluated on {formatDate(evaluation.evaluated_at)}
+                                </CardDescription>
+                            </div>
+                            <div className="text-right">
+                                <div className="text-3xl font-bold text-primary">
+                                    {evaluation.average_score.toFixed(1)}/5
+                                </div>
+                                <div className="text-sm text-muted-foreground">Average Score</div>
+                            </div>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                        <div className="grid gap-4 md:grid-cols-2">
+                            {EVALUATION_CRITERIA.map(({ key, label }) => (
+                                <div key={key} className="flex justify-between items-center p-3 bg-background rounded-lg border">
+                                    <span className="font-medium">{label}</span>
+                                    <div className="flex gap-1">
+                                        {[1, 2, 3, 4, 5].map((star) => (
+                                            <Star
+                                                key={star}
+                                                className={`h-4 w-4 ${star <= (evaluation[key as keyof Evaluation] as number)
+                                                        ? 'text-yellow-500 fill-yellow-500'
+                                                        : 'text-muted-foreground/30'
+                                                    }`}
+                                            />
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        {evaluation.feedback && (
+                            <div className="bg-background p-4 rounded-lg border">
+                                <h4 className="font-semibold mb-2 flex items-center gap-2">
+                                    <CheckCircle2 className="h-4 w-4 text-green-500" />
+                                    Feedback
+                                </h4>
+                                <p className="text-muted-foreground whitespace-pre-wrap">
+                                    {evaluation.feedback}
+                                </p>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+            )}
 
             {/* Submission Form */}
             {(assignment.status === 'in_progress' || assignment.status === 'submitted') && (

@@ -3,267 +3,269 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { supabaseClient } from '@/lib/supabase/client';
-import { MemberProfile } from '@/types/database.types';
+import { MemberProfile, CurriculumModule } from '@/types/database.types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Loader2, BookOpen, CheckCircle2, Circle } from 'lucide-react';
+import { Loader2, BookOpen, CheckCircle2, Circle, ExternalLink } from 'lucide-react';
 import { TRACK_LABELS, STAGE_LABELS, STAGE_COLORS } from '@/lib/utils/constants';
 
-const trackCurriculum = {
-  web_development: [
-    {
-      module: 'Foundations',
-      topics: ['HTML5 & Semantic Markup', 'CSS3 & Flexbox/Grid', 'JavaScript ES6+', 'Git & GitHub'],
-      duration: '2 weeks',
-    },
-    {
-      module: 'Frontend Frameworks',
-      topics: ['React Fundamentals', 'Component Patterns', 'State Management', 'React Hooks'],
-      duration: '3 weeks',
-    },
-    {
-      module: 'Full Stack Development',
-      topics: ['Next.js', 'API Routes', 'Database Integration', 'Authentication'],
-      duration: '4 weeks',
-    },
-    {
-      module: 'Advanced Topics',
-      topics: ['Performance Optimization', 'Testing', 'Deployment', 'Best Practices'],
-      duration: '3 weeks',
-    },
-  ],
-  ai_ml: [
-    {
-      module: 'Python & Data Fundamentals',
-      topics: ['Python Programming', 'NumPy & Pandas', 'Data Visualization', 'Statistics'],
-      duration: '3 weeks',
-    },
-    {
-      module: 'Machine Learning Basics',
-      topics: ['Supervised Learning', 'Unsupervised Learning', 'Scikit-learn', 'Model Evaluation'],
-      duration: '4 weeks',
-    },
-    {
-      module: 'Deep Learning',
-      topics: ['Neural Networks', 'TensorFlow/PyTorch', 'CNNs & RNNs', 'NLP Basics'],
-      duration: '4 weeks',
-    },
-    {
-      module: 'AI Applications',
-      topics: ['Computer Vision', 'Natural Language Processing', 'Model Deployment', 'MLOps'],
-      duration: '3 weeks',
-    },
-  ],
-  design: [
-    {
-      module: 'Design Fundamentals',
-      topics: ['Color Theory', 'Typography', 'Layout & Composition', 'Design Principles'],
-      duration: '2 weeks',
-    },
-    {
-      module: 'UI Design',
-      topics: ['Figma Mastery', 'Component Design', 'Design Systems', 'Prototyping'],
-      duration: '3 weeks',
-    },
-    {
-      module: 'UX Research',
-      topics: ['User Research', 'Wireframing', 'User Testing', 'Accessibility'],
-      duration: '3 weeks',
-    },
-    {
-      module: 'Advanced Design',
-      topics: ['Motion Design', 'Interaction Design', 'Design Handoff', 'Portfolio Building'],
-      duration: '4 weeks',
-    },
-  ],
-  mobile: [
-    {
-      module: 'Mobile Fundamentals',
-      topics: ['Mobile UI Patterns', 'Platform Guidelines', 'React Native Basics', 'Navigation'],
-      duration: '3 weeks',
-    },
-    {
-      module: 'App Development',
-      topics: ['State Management', 'API Integration', 'Local Storage', 'Push Notifications'],
-      duration: '3 weeks',
-    },
-    {
-      module: 'Native Features',
-      topics: ['Camera & Media', 'Geolocation', 'Sensors', 'Native Modules'],
-      duration: '3 weeks',
-    },
-    {
-      module: 'Production',
-      topics: ['Testing', 'Performance', 'App Store Deployment', 'Analytics'],
-      duration: '3 weeks',
-    },
-  ],
-  devops: [
-    {
-      module: 'Infrastructure Basics',
-      topics: ['Linux Administration', 'Networking', 'Security Fundamentals', 'Cloud Platforms'],
-      duration: '3 weeks',
-    },
-    {
-      module: 'CI/CD',
-      topics: ['Git Workflows', 'Jenkins/GitHub Actions', 'Docker', 'Automated Testing'],
-      duration: '4 weeks',
-    },
-    {
-      module: 'Cloud & Containers',
-      topics: ['Kubernetes', 'AWS/Azure/GCP', 'Infrastructure as Code', 'Monitoring'],
-      duration: '4 weeks',
-    },
-    {
-      module: 'Advanced DevOps',
-      topics: ['Microservices', 'Service Mesh', 'Observability', 'Security Best Practices'],
-      duration: '3 weeks',
-    },
-  ],
-};
-
 export default function TrackPage() {
-  const { profile } = useAuth();
-  const [memberProfile, setMemberProfile] = useState<MemberProfile | null>(null);
-  const [loading, setLoading] = useState(true);
+    const { profile } = useAuth();
+    const [memberProfile, setMemberProfile] = useState<MemberProfile | null>(null);
+    const [modules, setModules] = useState<CurriculumModule[]>([]);
+    const [completedIds, setCompletedIds] = useState<string[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [toggling, setToggling] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (profile?.id) {
-      fetchMemberProfile();
-    }
-  }, [profile?.id]);
+    useEffect(() => {
+        if (profile?.id) {
+            fetchData();
+        }
+    }, [profile?.id]);
 
-  const fetchMemberProfile = async () => {
-    if (!profile?.id) return;
+    const fetchData = async () => {
+        if (!profile?.id) return;
+        const supabase = supabaseClient();
 
-    const supabase = supabaseClient();
+        try {
+            // Fetch member profile
+            const { data: mp } = await supabase
+                .from('member_profiles')
+                .select('*')
+                .eq('id', profile.id)
+                .single();
 
-    try {
-      const { data } = await supabase
-        .from('member_profiles')
-        .select('*')
-        .eq('id', profile.id)
-        .single();
+            if (mp) {
+                setMemberProfile(mp);
+                setCompletedIds(mp.completed_module_ids || []);
 
-      if (data) setMemberProfile(data);
-    } catch (error) {
-      console.error('Error fetching member profile:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+                // Fetch curriculum modules for this track
+                const { data: modulesData } = await supabase
+                    .from('curriculum_modules')
+                    .select('*')
+                    .eq('track', mp.track)
+                    .order('order_index', { ascending: true });
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
+                if (modulesData && modulesData.length > 0) {
+                    setModules(modulesData);
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching track data:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
-  if (!memberProfile?.track) {
-    return (
-      <Card>
-        <CardContent className="py-8">
-          <p className="text-center text-muted-foreground">
-            No track selected. Please complete your profile setup.
-          </p>
-        </CardContent>
-      </Card>
-    );
-  }
+    const toggleModuleCompletion = async (moduleId: string) => {
+        if (!profile?.id) return;
+        setToggling(moduleId);
 
-  const curriculum = trackCurriculum[memberProfile.track];
-  const completedModules = 1; // This should be dynamic based on actual progress
+        const isCompleted = completedIds.includes(moduleId);
+        const newIds = isCompleted
+            ? completedIds.filter((id) => id !== moduleId)
+            : [...completedIds, moduleId];
 
-  return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Learning Track</h1>
-        <p className="text-muted-foreground mt-2">
-          Your personalized curriculum for {TRACK_LABELS[memberProfile.track]}
-        </p>
-      </div>
+        // Optimistic update
+        setCompletedIds(newIds);
 
-      {/* Track Overview */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Track Progress</CardTitle>
-              <CardDescription>{TRACK_LABELS[memberProfile.track]}</CardDescription>
+        const supabase = supabaseClient();
+        try {
+            const { error } = await supabase
+                .from('member_profiles')
+                .update({ completed_module_ids: newIds })
+                .eq('id', profile.id);
+
+            if (error) throw error;
+        } catch (error: any) {
+            // Revert on error
+            setCompletedIds(completedIds);
+            console.error('Error updating progress:', error?.message || error);
+        } finally {
+            setToggling(null);
+        }
+    };
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center h-96">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
-            <Badge className={memberProfile.current_stage ? STAGE_COLORS[memberProfile.current_stage] : ''}>
-              {memberProfile.current_stage ? STAGE_LABELS[memberProfile.current_stage] : 'Unknown'}
-            </Badge>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">
-                {completedModules} of {curriculum.length} modules completed
-              </span>
-              <span className="font-medium">
-                {Math.round((completedModules / curriculum.length) * 100)}%
-              </span>
-            </div>
-            <Progress value={(completedModules / curriculum.length) * 100} />
-          </div>
-        </CardContent>
-      </Card>
+        );
+    }
 
-      {/* Curriculum Modules */}
-      <div className="space-y-4">
-        <h2 className="text-2xl font-semibold">Curriculum</h2>
-        {curriculum.map((module, index) => {
-          const isCompleted = index < completedModules;
-          const isCurrent = index === completedModules;
-
-          return (
-            <Card key={index} className={isCurrent ? 'border-primary' : ''}>
-              <CardHeader>
-                <div className="flex items-start gap-4">
-                  <div className="mt-1">
-                    {isCompleted ? (
-                      <CheckCircle2 className="h-6 w-6 text-green-500" />
-                    ) : (
-                      <Circle className="h-6 w-6 text-muted-foreground" />
-                    )}
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between">
-                      <CardTitle>
-                        Module {index + 1}: {module.module}
-                      </CardTitle>
-                      <Badge variant="outline">{module.duration}</Badge>
-                    </div>
-                    {isCurrent && (
-                      <Badge className="mt-2" variant="default">
-                        Current Module
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="ml-10">
-                  <h4 className="text-sm font-medium mb-2">Topics Covered:</h4>
-                  <ul className="grid grid-cols-2 gap-2">
-                    {module.topics.map((topic, idx) => (
-                      <li key={idx} className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <BookOpen className="h-3 w-3" />
-                        {topic}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </CardContent>
+    if (!memberProfile?.track) {
+        return (
+            <Card>
+                <CardContent className="py-8">
+                    <p className="text-center text-muted-foreground">
+                        No track selected. Please complete your profile setup.
+                    </p>
+                </CardContent>
             </Card>
-          );
-        })}
-      </div>
-    </div>
-  );
+        );
+    }
+
+    const completedCount = modules.filter((m) => completedIds.includes(m.id)).length;
+    const progressPercent = modules.length > 0 ? Math.round((completedCount / modules.length) * 100) : 0;
+
+    return (
+        <div className="space-y-8">
+            <div>
+                <h1 className="text-3xl font-bold tracking-tight">Learning Track</h1>
+                <p className="text-muted-foreground mt-2">
+                    Your personalized curriculum for {TRACK_LABELS[memberProfile.track]}
+                </p>
+            </div>
+
+            {/* Track Overview */}
+            {modules.length > 0 && (
+                <Card>
+                    <CardHeader>
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <CardTitle>Track Progress</CardTitle>
+                                <CardDescription>{TRACK_LABELS[memberProfile.track]}</CardDescription>
+                            </div>
+                            <Badge className={memberProfile.current_stage ? STAGE_COLORS[memberProfile.current_stage] : ''}>
+                                {memberProfile.current_stage ? STAGE_LABELS[memberProfile.current_stage] : 'Unknown'}
+                            </Badge>
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="space-y-2">
+                            <div className="flex justify-between text-sm">
+                                <span className="text-muted-foreground">
+                                    {completedCount} of {modules.length} modules completed
+                                </span>
+                                <span className="font-medium">
+                                    {progressPercent}%
+                                </span>
+                            </div>
+                            <Progress value={progressPercent} />
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
+
+            {/* Curriculum Modules */}
+            <div className="space-y-4">
+                <h2 className="text-2xl font-semibold">Curriculum</h2>
+                {modules.length === 0 ? (
+                    <Card>
+                        <CardContent className="py-8">
+                            <p className="text-center text-muted-foreground">
+                                No curriculum modules have been published for this track yet.
+                            </p>
+                        </CardContent>
+                    </Card>
+                ) : (
+                    modules.map((mod, index) => {
+                        const isCompleted = completedIds.includes(mod.id);
+                        const isToggling = toggling === mod.id;
+
+                        return (
+                            <Card key={mod.id} className={isCompleted ? 'border-green-500/30' : ''}>
+                                <CardHeader>
+                                    <div className="flex items-start gap-4">
+                                        <button
+                                            className="mt-1 focus:outline-none"
+                                            onClick={() => toggleModuleCompletion(mod.id)}
+                                            disabled={isToggling}
+                                        >
+                                            {isToggling ? (
+                                                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                                            ) : isCompleted ? (
+                                                <CheckCircle2 className="h-6 w-6 text-green-500 hover:text-green-400 transition-colors" />
+                                            ) : (
+                                                <Circle className="h-6 w-6 text-muted-foreground hover:text-primary transition-colors" />
+                                            )}
+                                        </button>
+                                        <div className="flex-1">
+                                            <div className="flex items-center justify-between">
+                                                <CardTitle className={isCompleted ? 'line-through text-muted-foreground' : ''}>
+                                                    Module {index + 1}: {mod.title}
+                                                </CardTitle>
+                                                <div className="flex items-center gap-2">
+                                                    <Badge variant="outline">{mod.duration}</Badge>
+                                                    {isCompleted && (
+                                                        <Badge variant="secondary" className="text-green-600">
+                                                            Completed
+                                                        </Badge>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="ml-10 space-y-3">
+                                        <div>
+                                            <h4 className="text-sm font-medium mb-2">Topics Covered:</h4>
+                                            <ul className="grid grid-cols-2 gap-2">
+                                                {mod.topics.map((topic, idx) => (
+                                                    <li key={idx} className="flex items-center gap-2 text-sm text-muted-foreground">
+                                                        <BookOpen className="h-3 w-3 shrink-0" />
+                                                        {topic}
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
+
+                                        {mod.resources && mod.resources.length > 0 && (
+                                            <div>
+                                                <h4 className="text-sm font-medium mb-2">Resources:</h4>
+                                                <ul className="space-y-1">
+                                                    {mod.resources.map((resource, idx) => (
+                                                        <li key={idx} className="text-sm text-muted-foreground">
+                                                            {resource.startsWith('http') ? (
+                                                                <a
+                                                                    href={resource}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    className="flex items-center gap-1 text-primary hover:underline"
+                                                                >
+                                                                    <ExternalLink className="h-3 w-3" />
+                                                                    {resource}
+                                                                </a>
+                                                            ) : (
+                                                                <span className="flex items-center gap-1">
+                                                                    <BookOpen className="h-3 w-3" />
+                                                                    {resource}
+                                                                </span>
+                                                            )}
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        )}
+
+                                        {/* Mark Complete Button */}
+                                        <Button
+                                            variant={isCompleted ? 'outline' : 'default'}
+                                            size="sm"
+                                            onClick={() => toggleModuleCompletion(mod.id)}
+                                            disabled={isToggling}
+                                            className="mt-2"
+                                        >
+                                            {isToggling ? (
+                                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                            ) : isCompleted ? (
+                                                <CheckCircle2 className="h-4 w-4 mr-2" />
+                                            ) : (
+                                                <Circle className="h-4 w-4 mr-2" />
+                                            )}
+                                            {isCompleted ? 'Mark as Incomplete' : 'Mark as Complete'}
+                                        </Button>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        );
+                    })
+                )}
+            </div>
+        </div>
+    );
 }

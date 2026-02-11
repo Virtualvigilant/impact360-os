@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { TrackSelectionModal } from './TrackSelectionModal';
+import { OnboardingWizard } from '@/components/onboarding/OnboardingWizard';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { supabaseClient } from '@/lib/supabase/client';
 import { MemberProfile, ProjectAssignment, Evaluation } from '@/types/database.types';
@@ -17,7 +17,7 @@ export default function DashboardPage() {
     const [assignments, setAssignments] = useState<ProjectAssignment[]>([]);
     const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
     const [dataLoading, setDataLoading] = useState(true);
-    const [showTrackSelection, setShowTrackSelection] = useState(false);
+    const [showOnboarding, setShowOnboarding] = useState(false);
 
     const fetchDashboardData = async () => {
         if (!profile?.id) return;
@@ -71,8 +71,8 @@ export default function DashboardPage() {
     }, [profile?.id, authLoading]);
 
     useEffect(() => {
-        if (memberProfile && !memberProfile.track) {
-            setShowTrackSelection(true);
+        if (memberProfile && memberProfile.current_stage === 'intake') {
+            setShowOnboarding(true);
         }
     }, [memberProfile]);
 
@@ -85,14 +85,14 @@ export default function DashboardPage() {
         );
     }
 
-    // Show track selection modal if no track chosen
-    if (showTrackSelection && profile?.id) {
+    // Show onboarding wizard if user is in intake stage
+    if (showOnboarding && profile?.id) {
         return (
-            <TrackSelectionModal
-                isOpen={showTrackSelection}
+            <OnboardingWizard
                 memberId={profile.id}
+                memberName={profile.full_name || 'there'}
                 onComplete={() => {
-                    setShowTrackSelection(false);
+                    setShowOnboarding(false);
                     fetchDashboardData();
                 }}
             />
@@ -133,8 +133,8 @@ export default function DashboardPage() {
                         </div>
                         <Badge
                             className={`mt-2 ${memberProfile?.current_stage
-                                    ? STAGE_COLORS[memberProfile.current_stage]
-                                    : 'bg-gray-500'
+                                ? STAGE_COLORS[memberProfile.current_stage]
+                                : 'bg-gray-500'
                                 }`}
                         >
                             {memberProfile?.track ? TRACK_LABELS[memberProfile.track] : 'No Track'}

@@ -13,28 +13,17 @@ import { formatDate } from '@/lib/utils/format';
 import Link from 'next/link';
 import {
     Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
     DialogTrigger,
 } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
+import { CohortDialog } from '@/components/admin/CohortDialog';
+
 
 export default function CohortsPage() {
     const { profile, isAdmin, isMentor } = useAuth();
     const [cohorts, setCohorts] = useState<Cohort[]>([]);
     const [loading, setLoading] = useState(true);
-    const [createDialogOpen, setCreateDialogOpen] = useState(false);
+    const [dialogOpen, setDialogOpen] = useState(false);
+    const [selectedCohort, setSelectedCohort] = useState<Cohort | undefined>(undefined);
 
     useEffect(() => {
         if (profile?.id && (isAdmin || isMentor)) {
@@ -46,8 +35,8 @@ export default function CohortsPage() {
         const supabase = supabaseClient();
 
         try {
-            const { data, error } = await supabase
-                .from('cohorts')
+            const { data, error } = await (supabase
+                .from('cohorts') as any)
                 .select('*')
                 .order('created_at', { ascending: false });
 
@@ -64,6 +53,20 @@ export default function CohortsPage() {
             console.error('Error fetching cohorts:', error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleDelete = async (cohortId: string) => {
+        if (!confirm('Are you sure you want to delete this cohort? This action cannot be undone.')) return;
+
+        const supabase = supabaseClient();
+        try {
+            const { error } = await (supabase.from('cohorts') as any).delete().eq('id', cohortId);
+            if (error) throw error;
+            fetchCohorts();
+        } catch (error) {
+            console.error('Error deleting cohort:', error);
+            alert('Failed to delete cohort. It may have associated members.');
         }
     };
 
@@ -100,20 +103,20 @@ export default function CohortsPage() {
                     </p>
                 </div>
                 {isAdmin && (
-                    <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-                        <DialogTrigger asChild>
-                            <Button>
-                                <Plus className="mr-2 h-4 w-4" />
-                                Create Cohort
-                            </Button>
-                        </DialogTrigger>
-                        <CreateCohortDialog
+                    <>
+                        <Button onClick={() => { setSelectedCohort(undefined); setDialogOpen(true); }}>
+                            <Plus className="mr-2 h-4 w-4" />
+                            Create Cohort
+                        </Button>
+                        <CohortDialog
+                            open={dialogOpen}
+                            onOpenChange={setDialogOpen}
+                            initialData={selectedCohort}
                             onSuccess={() => {
-                                setCreateDialogOpen(false);
                                 fetchCohorts();
                             }}
                         />
-                    </Dialog>
+                    </>
                 )}
             </div>
 
@@ -161,7 +164,13 @@ export default function CohortsPage() {
                 ) : (
                     <div className="grid gap-4 md:grid-cols-2">
                         {activeCohorts.map((cohort) => (
-                            <CohortCard key={cohort.id} cohort={cohort} />
+                            <CohortCard
+                                key={cohort.id}
+                                cohort={cohort}
+                                onEdit={(c) => { setSelectedCohort(c); setDialogOpen(true); }}
+                                onDelete={() => handleDelete(cohort.id)}
+                                isAdmin={isAdmin}
+                            />
                         ))}
                     </div>
                 )}
@@ -173,7 +182,13 @@ export default function CohortsPage() {
                     <h2 className="text-2xl font-semibold">Completed Cohorts</h2>
                     <div className="grid gap-4 md:grid-cols-2">
                         {inactiveCohorts.map((cohort) => (
-                            <CohortCard key={cohort.id} cohort={cohort} />
+                            <CohortCard
+                                key={cohort.id}
+                                cohort={cohort}
+                                onEdit={(c) => { setSelectedCohort(c); setDialogOpen(true); }}
+                                onDelete={() => handleDelete(cohort.id)}
+                                isAdmin={isAdmin}
+                            />
                         ))}
                     </div>
                 </div>
@@ -182,7 +197,7 @@ export default function CohortsPage() {
     );
 }
 
-function CohortCard({ cohort }: { cohort: Cohort }) {
+function CohortCard({ cohort, onEdit, onDelete, isAdmin }: { cohort: Cohort, onEdit: (c: Cohort) => void, onDelete: () => void, isAdmin: boolean }) {
     const [memberCount, setMemberCount] = useState(0);
     const [mentorNames, setMentorNames] = useState<string[]>([]);
 
@@ -195,8 +210,8 @@ function CohortCard({ cohort }: { cohort: Cohort }) {
 
     const fetchMemberCount = async () => {
         const supabase = supabaseClient();
-        const { count } = await supabase
-            .from('member_profiles')
+        const { count } = await (supabase
+            .from('member_profiles') as any)
             .select('*', { count: 'exact', head: true })
             .eq('cohort_id', cohort.id);
 
@@ -205,11 +220,11 @@ function CohortCard({ cohort }: { cohort: Cohort }) {
 
     const fetchMentorNames = async () => {
         const supabase = supabaseClient();
-        const { data } = await supabase
-            .from('profiles')
+        const { data } = await (supabase
+            .from('profiles') as any)
             .select('full_name')
             .in('id', cohort.mentor_ids!);
-        if (data) setMentorNames(data.map((p) => p.full_name));
+        if (data) setMentorNames(data.map((p: any) => p.full_name));
     };
 
     return (
@@ -254,200 +269,24 @@ function CohortCard({ cohort }: { cohort: Cohort }) {
                     )}
                 </div>
 
-                <Button variant="outline" className="w-full" asChild>
-                    <Link href={`/dashboard/cohorts/${cohort.id}`}>View Details</Link>
-                </Button>
+                <div className="flex gap-2">
+                    <Button variant="outline" className="flex-1" asChild>
+                        <Link href={`/dashboard/cohorts/${cohort.id}`}>View Details</Link>
+                    </Button>
+                    {isAdmin && (
+                        <>
+                            <Button variant="ghost" size="icon" onClick={() => onEdit(cohort)}>
+                                <span className="sr-only">Edit</span>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-pencil"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" /><path d="m15 5 4 4" /></svg>
+                            </Button>
+                            <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={onDelete}>
+                                <span className="sr-only">Delete</span>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-trash-2"><path d="M3 6h18" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" /><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /><line x1="10" x2="10" y1="11" y2="17" /><line x1="14" x2="14" y1="11" y2="17" /></svg>
+                            </Button>
+                        </>
+                    )}
+                </div>
             </CardContent>
         </Card>
-    );
-}
-
-function CreateCohortDialog({ onSuccess }: { onSuccess: () => void }) {
-    const { profile } = useAuth();
-    const [loading, setLoading] = useState(false);
-    const [mentors, setMentors] = useState<Profile[]>([]);
-    const [selectedMentorIds, setSelectedMentorIds] = useState<string[]>([]);
-    const [formData, setFormData] = useState({
-        name: '',
-        description: '',
-        track: '',
-        start_date: '',
-        end_date: '',
-    });
-
-    useEffect(() => {
-        fetchMentors();
-    }, []);
-
-    const fetchMentors = async () => {
-        const supabase = supabaseClient();
-        const { data } = await supabase
-            .from('profiles')
-            .select('*')
-            .in('role', ['mentor', 'admin'])
-            .order('full_name');
-        if (data) setMentors(data);
-    };
-
-    const toggleMentor = (id: string) => {
-        setSelectedMentorIds((prev) =>
-            prev.includes(id) ? prev.filter((m) => m !== id) : [...prev, id]
-        );
-    };
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setLoading(true);
-
-        const supabase = supabaseClient();
-
-        try {
-            const { error } = await supabase.from('cohorts').insert({
-                name: formData.name,
-                description: formData.description,
-                track: formData.track,
-                start_date: formData.start_date,
-                end_date: formData.end_date || null,
-                is_active: true,
-                created_by: profile?.id,
-                mentor_ids: selectedMentorIds.length > 0 ? selectedMentorIds : null,
-            });
-
-            if (error) throw error;
-            onSuccess();
-        } catch (error: any) {
-            console.error('Error creating cohort:', error?.message || JSON.stringify(error));
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    return (
-        <DialogContent className="sm:max-w-[500px]">
-            <DialogHeader>
-                <DialogTitle>Create New Cohort</DialogTitle>
-                <DialogDescription>
-                    Set up a new cohort for batch training
-                </DialogDescription>
-            </DialogHeader>
-
-            <form onSubmit={handleSubmit} className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
-                <div className="space-y-2">
-                    <Label htmlFor="name">Cohort Name *</Label>
-                    <Input
-                        id="name"
-                        placeholder="e.g., Web Dev Cohort Q1 2026"
-                        value={formData.name}
-                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        required
-                    />
-                </div>
-
-                <div className="space-y-2">
-                    <Label htmlFor="description">Description</Label>
-                    <Textarea
-                        id="description"
-                        placeholder="Brief description of the cohort..."
-                        rows={3}
-                        value={formData.description}
-                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    />
-                </div>
-
-                <div className="space-y-2">
-                    <Label htmlFor="track">Track *</Label>
-                    <Select
-                        value={formData.track}
-                        onValueChange={(value) => setFormData({ ...formData, track: value })}
-                        required
-                    >
-                        <SelectTrigger>
-                            <SelectValue placeholder="Select track" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="web_development">Web Development</SelectItem>
-                            <SelectItem value="ai_ml">AI & Machine Learning</SelectItem>
-                            <SelectItem value="design">UI/UX Design</SelectItem>
-                            <SelectItem value="mobile">Mobile Development</SelectItem>
-                            <SelectItem value="devops">DevOps Engineering</SelectItem>
-                        </SelectContent>
-                    </Select>
-                </div>
-
-                {/* Mentor Assignment */}
-                <div className="space-y-2">
-                    <Label>Assign Mentors</Label>
-                    {selectedMentorIds.length > 0 && (
-                        <div className="flex flex-wrap gap-1.5 mb-2">
-                            {selectedMentorIds.map((id) => {
-                                const mentor = mentors.find((m) => m.id === id);
-                                return (
-                                    <Badge key={id} variant="secondary" className="gap-1">
-                                        {mentor?.full_name}
-                                        <button type="button" onClick={() => toggleMentor(id)} className="ml-0.5 hover:text-destructive">
-                                            <X className="h-3 w-3" />
-                                        </button>
-                                    </Badge>
-                                );
-                            })}
-                        </div>
-                    )}
-                    <div className="border rounded-md max-h-32 overflow-y-auto">
-                        {mentors.length === 0 ? (
-                            <p className="text-sm text-muted-foreground p-3">No mentors found</p>
-                        ) : (
-                            mentors.map((mentor) => (
-                                <button
-                                    key={mentor.id}
-                                    type="button"
-                                    onClick={() => toggleMentor(mentor.id)}
-                                    className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-muted/50 transition-colors ${selectedMentorIds.includes(mentor.id) ? 'bg-primary/10 text-primary' : ''
-                                        }`}
-                                >
-                                    <UserCheck className={`h-4 w-4 ${selectedMentorIds.includes(mentor.id) ? 'text-primary' : 'text-muted-foreground'
-                                        }`} />
-                                    <span>{mentor.full_name}</span>
-                                    <Badge variant="outline" className="ml-auto text-xs capitalize">{mentor.role}</Badge>
-                                </button>
-                            ))
-                        )}
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="start_date">Start Date *</Label>
-                        <Input
-                            id="start_date"
-                            type="date"
-                            value={formData.start_date}
-                            onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                            required
-                        />
-                    </div>
-
-                    <div className="space-y-2">
-                        <Label htmlFor="end_date">End Date (Optional)</Label>
-                        <Input
-                            id="end_date"
-                            type="date"
-                            value={formData.end_date}
-                            onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                        />
-                    </div>
-                </div>
-
-                <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? (
-                        <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Creating...
-                        </>
-                    ) : (
-                        'Create Cohort'
-                    )}
-                </Button>
-            </form>
-        </DialogContent>
     );
 }

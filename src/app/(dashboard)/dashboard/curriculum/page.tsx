@@ -54,8 +54,8 @@ export default function CurriculumPage() {
     const fetchModules = async () => {
         const supabase = supabaseClient();
         try {
-            const { data, error } = await supabase
-                .from('curriculum_modules')
+            const { data, error } = await (supabase
+                .from('curriculum_modules') as any)
                 .select('*')
                 .order('order_index', { ascending: true });
 
@@ -71,8 +71,8 @@ export default function CurriculumPage() {
     const deleteModule = async (id: string) => {
         const supabase = supabaseClient();
         try {
-            const { error } = await supabase
-                .from('curriculum_modules')
+            const { error } = await (supabase
+                .from('curriculum_modules') as any)
                 .delete()
                 .eq('id', id);
             if (error) throw error;
@@ -296,14 +296,14 @@ function ModuleFormDialog({
             };
 
             if (editModule) {
-                const { error } = await supabase
-                    .from('curriculum_modules')
+                const { error } = await (supabase
+                    .from('curriculum_modules') as any)
                     .update(payload)
                     .eq('id', editModule.id);
                 if (error) throw error;
             } else {
-                const { error } = await supabase
-                    .from('curriculum_modules')
+                const { error } = await (supabase
+                    .from('curriculum_modules') as any)
                     .insert(payload);
                 if (error) throw error;
             }

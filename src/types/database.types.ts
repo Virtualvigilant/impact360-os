@@ -66,18 +66,38 @@ export interface Project {
     is_active: boolean;
     created_at: string;
     updated_at: string;
+    is_team_project?: boolean;
+    milestones?: Record<string, any>[]; // JSONB: { id, title, description, deadline_offset }
+}
+
+export interface Team {
+    id: string;
+    name: string;
+    project_id?: string;
+    created_by?: string;
+    is_active?: boolean;
+    created_at: string;
+}
+
+export interface TeamMember {
+    team_id: string;
+    user_id: string;
+    role?: 'leader' | 'member';
 }
 
 export interface ProjectAssignment {
     id: string;
     project_id: string;
     member_id: string;
+    team_id?: string;
     status: ProjectStatus;
     assigned_at: string;
     started_at?: string;
     submitted_at?: string;
     completed_at?: string;
     project?: Project;
+    team?: Team;
+    milestone_progress?: Record<string, { status: 'pending' | 'completed'; completed_at?: string }>;
 }
 
 export interface Submission {
@@ -115,6 +135,7 @@ export interface Badge {
     icon?: string;
     criteria?: any;
     created_at: string;
+    created_at_?: string; // Potential duplicate or typo in source, keeping consistent
 }
 
 export interface Notification {
@@ -138,4 +159,137 @@ export interface CurriculumModule {
     resources?: string[];
     created_at: string;
     updated_at: string;
+}
+
+
+export interface TeamInsert {
+    id?: string;
+    name: string;
+    project_id?: string;
+    created_by?: string;
+    is_active?: boolean;
+    created_at?: string;
+}
+
+export interface TeamMemberInsert {
+    team_id: string;
+    user_id: string;
+    role?: 'leader' | 'member';
+}
+
+export interface NotificationInsert {
+    id?: string;
+    user_id: string;
+    title: string;
+    message: string;
+    type: string;
+    is_read?: boolean;
+    related_id?: string;
+    created_at?: string;
+}
+
+export interface MemberProfileInsert {
+    id: string; // ID is usually required for profile linking to auth user
+    current_stage?: PipelineStage;
+    track?: TrackType;
+    cohort_id?: string;
+    bio?: string;
+    skills?: string[];
+    github_url?: string;
+    linkedin_url?: string;
+    portfolio_url?: string;
+    experience_level?: ExperienceLevel;
+    interests?: string[];
+    level?: number;
+    experience_points?: number;
+    is_client_ready?: boolean;
+    client_ready_date?: string;
+    created_at?: string;
+    updated_at?: string;
+    completed_module_ids?: string[];
+}
+
+
+export interface Database {
+    public: {
+        Tables: {
+            profiles: {
+                Row: Profile
+                Insert: Profile
+                Update: Partial<Profile>
+            }
+            member_profiles: {
+                Row: MemberProfile
+                Insert: MemberProfileInsert
+                Update: Partial<MemberProfile>
+            }
+            cohorts: {
+                Row: Cohort
+                Insert: Cohort
+                Update: Partial<Cohort>
+            }
+            projects: {
+                Row: Project
+                Insert: Project
+                Update: Partial<Project>
+            }
+            teams: {
+                Row: Team
+                Insert: TeamInsert
+                Update: Partial<Team>
+            }
+            team_members: {
+                Row: TeamMember
+                Insert: TeamMemberInsert
+                Update: Partial<TeamMember>
+            }
+            project_assignments: {
+                Row: ProjectAssignment
+                Insert: ProjectAssignment
+                Update: Partial<ProjectAssignment>
+            }
+            submissions: {
+                Row: Submission
+                Insert: Submission
+                Update: Partial<Submission>
+            }
+            evaluations: {
+                Row: Evaluation
+                Insert: Evaluation
+                Update: Partial<Evaluation>
+            }
+            badges: {
+                Row: Badge
+                Insert: Badge
+                Update: Partial<Badge>
+            }
+            notifications: {
+                Row: Notification
+                Insert: NotificationInsert
+                Update: Partial<Notification>
+            }
+            curriculum_modules: {
+                Row: CurriculumModule
+                Insert: CurriculumModule
+                Update: Partial<CurriculumModule>
+            }
+        }
+        Views: {
+            [_ in never]: never
+        }
+        Functions: {
+            [_ in never]: never
+        }
+        Enums: {
+            user_role: UserRole
+            pipeline_stage: PipelineStage
+            track_type: TrackType
+            project_status: ProjectStatus
+            project_difficulty: ProjectDifficulty
+            experience_level: ExperienceLevel
+        }
+        CompositeTypes: {
+            [_ in never]: never
+        }
+    }
 }

@@ -57,6 +57,12 @@ const navItems: NavItem[] = [
         roles: ['mentor', 'admin'],
     },
     {
+        title: 'Teams',
+        href: '/dashboard/teams',
+        icon: Users,
+        roles: ['mentor', 'admin'],
+    },
+    {
         title: 'All Projects',
         href: '/dashboard/all-projects',
         icon: FolderKanban,

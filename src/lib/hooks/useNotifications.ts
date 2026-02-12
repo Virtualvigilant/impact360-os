@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { supabaseClient } from '@/lib/supabase/client';
 import { Notification } from '@/types/database.types';
 import { useAuth } from './useAuth';
+import { toast } from 'sonner';
 
 export function useNotifications() {
     const { user } = useAuth();
@@ -40,9 +41,9 @@ export function useNotifications() {
             const supabase = supabaseClient();
 
             try {
-                const { error } = await supabase
-                    .from('notifications')
-                    .update({ is_read: true })
+                const { error } = await (supabase
+                    .from('notifications') as any)
+                    .update({ is_read: true } as any)
                     .eq('id', notificationId);
 
                 if (error) throw error;
@@ -64,9 +65,9 @@ export function useNotifications() {
         const supabase = supabaseClient();
 
         try {
-            const { error } = await supabase
-                .from('notifications')
-                .update({ is_read: true })
+            const { error } = await (supabase
+                .from('notifications') as any)
+                .update({ is_read: true } as any)
                 .eq('user_id', user.id)
                 .eq('is_read', false);
 
@@ -104,6 +105,9 @@ export function useNotifications() {
                 (payload) => {
                     const newNotification = payload.new as Notification;
                     setNotifications((prev) => [newNotification, ...prev]);
+                    toast.info(newNotification.title, {
+                        description: newNotification.message,
+                    });
                 }
             )
             .subscribe();

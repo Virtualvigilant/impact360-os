@@ -62,7 +62,7 @@ export function AddEvaluationDialog({
         const supabase = supabaseClient();
 
         try {
-            const { error } = await supabase.from('evaluations').insert({
+            const { error } = await (supabase.from('evaluations') as any).insert({
                 submission_id: null,
                 member_id: memberId,
                 evaluator_id: user.id,
@@ -75,7 +75,7 @@ export function AddEvaluationDialog({
             if (error) throw error;
 
             // Notify the member
-            await supabase.from('notifications').insert({
+            await (supabase.from('notifications') as any).insert({
                 user_id: memberId,
                 title: 'New Evaluation Received',
                 message: `You received a new evaluation with an average score of ${averageScore.toFixed(1)}/5.`,

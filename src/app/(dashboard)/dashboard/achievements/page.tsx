@@ -49,8 +49,8 @@ export default function AchievementsPage() {
 
         try {
             // Fetch member profile
-            const { data: mp } = await supabase
-                .from('member_profiles')
+            const { data: mp } = await (supabase
+                .from('member_profiles') as any)
                 .select('*')
                 .eq('id', profile.id)
                 .single();
@@ -71,17 +71,17 @@ export default function AchievementsPage() {
                 .eq('member_id', profile.id);
 
             // Fetch evaluations
-            const { data: evaluations } = await supabase
-                .from('evaluations')
+            const { data: evaluations } = await (supabase
+                .from('evaluations') as any)
                 .select('average_score')
                 .eq('member_id', profile.id);
 
             const evaluationCount = evaluations?.length || 0;
             const averageScore = evaluationCount > 0
-                ? evaluations!.reduce((sum, e) => sum + (e.average_score || 0), 0) / evaluationCount
+                ? evaluations!.reduce((sum: number, e: any) => sum + (e.average_score || 0), 0) / evaluationCount
                 : 0;
             const highestScore = evaluationCount > 0
-                ? Math.max(...evaluations!.map((e) => e.average_score || 0))
+                ? Math.max(...evaluations!.map((e: any) => e.average_score || 0))
                 : 0;
 
             // Fetch curriculum modules for this track
@@ -117,7 +117,7 @@ export default function AchievementsPage() {
 
             // If stats changed, update DB
             if (calculatedStats.xp !== mp.experience_points || calculatedStats.level !== mp.level) {
-                await supabase.from('member_profiles').update({
+                await (supabase.from('member_profiles') as any).update({
                     experience_points: calculatedStats.xp,
                     level: calculatedStats.level
                 }).eq('id', profile.id);
@@ -167,7 +167,7 @@ export default function AchievementsPage() {
             </div>
 
             {/* XP & Level Card */}
-            <Card className="border-primary/30 bg-gradient-to-r from-primary/5 to-transparent">
+            <Card className="border-primary/30 bg-linear-to-r from-primary/5 to-transparent">
                 <CardContent className="pt-6">
                     <div className="flex items-center justify-between mb-4">
                         <div>

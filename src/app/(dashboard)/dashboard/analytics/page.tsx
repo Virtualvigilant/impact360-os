@@ -8,6 +8,7 @@ import { Loader2, Users, FolderKanban, TrendingUp, CheckCircle2, Clock, Award } 
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { STAGE_LABELS, TRACK_LABELS } from '@/lib/utils/constants';
+import { MemberProfile, Project, ProjectAssignment, Evaluation } from '@/types/database.types';
 
 interface AnalyticsData {
   totalMembers: number;
@@ -40,16 +41,21 @@ export default function AnalyticsPage() {
     try {
       // Fetch all data in parallel
       const [
-        { data: members },
-        { data: projects },
-        { data: assignments },
-        { data: evaluations },
+        { data: membersData },
+        { data: projectsData },
+        { data: assignmentsData },
+        { data: evaluationsData },
       ] = await Promise.all([
-        supabase.from('member_profiles').select('*'),
-        supabase.from('projects').select('*'),
-        supabase.from('project_assignments').select('*'),
-        supabase.from('evaluations').select('*'),
+        (supabase.from('member_profiles') as any).select('*'),
+        (supabase.from('projects') as any).select('*'),
+        (supabase.from('project_assignments') as any).select('*'),
+        (supabase.from('evaluations') as any).select('*'),
       ]);
+
+      const members = membersData as MemberProfile[];
+      const projects = projectsData as Project[];
+      const assignments = assignmentsData as ProjectAssignment[];
+      const evaluations = evaluationsData as Evaluation[];
 
       if (!members) return;
 
@@ -57,7 +63,7 @@ export default function AnalyticsPage() {
       const totalMembers = members.length;
       const clientReadyMembers = members.filter((m) => m.is_client_ready).length;
       const deployedMembers = members.filter((m) => m.current_stage === 'deployed').length;
-      
+
       // Active members (those who've made progress in last 30 days)
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
@@ -83,8 +89,8 @@ export default function AnalyticsPage() {
       const totalProjects = projects?.length || 0;
       const completedProjects = assignments?.filter((a) => a.status === 'completed').length || 0;
       const totalAssignments = assignments?.length || 0;
-      const completionRate = totalAssignments > 0 
-        ? (completedProjects / totalAssignments) * 100 
+      const completionRate = totalAssignments > 0
+        ? (completedProjects / totalAssignments) * 100
         : 0;
 
       // Average evaluation score
@@ -309,9 +315,9 @@ export default function AnalyticsPage() {
               </div>
               <div className="w-16 text-right text-sm">{analytics.membersByStage.intake || 0}</div>
             </div>
-            
+
             <div className="pl-8 text-xs text-muted-foreground">↓</div>
-            
+
             <div className="flex items-center gap-4">
               <div className="w-32 text-sm font-medium">Training</div>
               <div className="flex-1">
@@ -319,9 +325,9 @@ export default function AnalyticsPage() {
               </div>
               <div className="w-16 text-right text-sm">{analytics.membersByStage.training || 0}</div>
             </div>
-            
+
             <div className="pl-8 text-xs text-muted-foreground">↓</div>
-            
+
             <div className="flex items-center gap-4">
               <div className="w-32 text-sm font-medium">Projects</div>
               <div className="flex-1">
@@ -329,9 +335,9 @@ export default function AnalyticsPage() {
               </div>
               <div className="w-16 text-right text-sm">{analytics.membersByStage.internal_projects || 0}</div>
             </div>
-            
+
             <div className="pl-8 text-xs text-muted-foreground">↓</div>
-            
+
             <div className="flex items-center gap-4">
               <div className="w-32 text-sm font-medium">Evaluation</div>
               <div className="flex-1">
@@ -339,9 +345,9 @@ export default function AnalyticsPage() {
               </div>
               <div className="w-16 text-right text-sm">{analytics.membersByStage.evaluation || 0}</div>
             </div>
-            
+
             <div className="pl-8 text-xs text-muted-foreground">↓</div>
-            
+
             <div className="flex items-center gap-4">
               <div className="w-32 text-sm font-medium">Client Ready</div>
               <div className="flex-1">
@@ -349,9 +355,9 @@ export default function AnalyticsPage() {
               </div>
               <div className="w-16 text-right text-sm">{analytics.membersByStage.client_ready || 0}</div>
             </div>
-            
+
             <div className="pl-8 text-xs text-muted-foreground">↓</div>
-            
+
             <div className="flex items-center gap-4">
               <div className="w-32 text-sm font-medium">Deployed</div>
               <div className="flex-1">

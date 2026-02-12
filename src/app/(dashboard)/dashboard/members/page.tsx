@@ -1,14 +1,15 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useAuth } from '@/lib/hooks/useAuth';
-import { supabaseClient } from '@/lib/supabase/client';
-import { MemberProfile, Profile, PipelineStage } from '@/types/database.types';
+import { useMembers, MemberWithProfile } from '@/lib/hooks/useMembers';
+import { PipelineStage } from '@/types/database.types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
     Select,
     SelectContent,
@@ -16,101 +17,76 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Loader2, Search, UserPlus, Mail, ExternalLink, ArrowRightLeft } from 'lucide-react';
+import { Loader2, Search, UserPlus, Mail, ExternalLink } from 'lucide-react';
 import { STAGE_LABELS, TRACK_LABELS, STAGE_COLORS } from '@/lib/utils/constants';
-import { getInitials, formatDate } from '@/lib/utils/format';
+import { getInitials } from '@/lib/utils/format';
 import Link from 'next/link';
 
-type MemberWithProfile = MemberProfile & {
-    profile: Profile;
-};
-
 export default function MembersPage() {
-    const { profile, isAdmin, isMentor } = useAuth();
-    const [members, setMembers] = useState<MemberWithProfile[]>([]);
-    const [loading, setLoading] = useState(true);
+    const { profile, isAdmin, isMentor, loading: authLoading } = useAuth();
+    const { members, loading: membersLoading, updateMemberStage, updatingStage } = useMembers();
     const [searchTerm, setSearchTerm] = useState('');
     const [filterStage, setFilterStage] = useState<string>('all');
     const [filterTrack, setFilterTrack] = useState<string>('all');
-    const [updatingStage, setUpdatingStage] = useState<string | null>(null);
-
-    const changeMemberStage = async (memberId: string, newStage: PipelineStage) => {
-        setUpdatingStage(memberId);
-        const supabase = supabaseClient();
-
-        try {
-            const updateData: Record<string, any> = { current_stage: newStage };
-            if (newStage === 'deployed') {
-                updateData.is_client_ready = true;
-                updateData.client_ready_date = new Date().toISOString();
-            }
-
-            const { error } = await supabase
-                .from('member_profiles')
-                .update(updateData)
-                .eq('id', memberId);
-
-            if (error) throw error;
-
-            // Send notification
-            await supabase.from('notifications').insert({
-                user_id: memberId,
-                title: 'Pipeline Stage Updated',
-                message: `Your pipeline stage has been updated to ${STAGE_LABELS[newStage]}.`,
-                type: 'stage_change',
-            });
-
-            // Update local state
-            setMembers((prev) =>
-                prev.map((m) =>
-                    m.id === memberId ? { ...m, current_stage: newStage, ...updateData } : m
-                )
-            );
-        } catch (error) {
-            console.error('Error changing stage:', error);
-        } finally {
-            setUpdatingStage(null);
-        }
-    };
-
-    useEffect(() => {
-        if (profile?.id && (isAdmin || isMentor)) {
-            fetchMembers();
-        }
-    }, [profile?.id, isAdmin, isMentor]);
-
-    const fetchMembers = async () => {
-        const supabase = supabaseClient();
-
-        try {
-            const { data, error } = await supabase
-                .from('member_profiles')
-                .select(`
-          *,
-          profile:profiles(*)
-        `)
-                .order('created_at', { ascending: false });
-
-            if (error) throw error;
-            if (data) setMembers(data as MemberWithProfile[]);
-        } catch (error) {
-            console.error('Error fetching members:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
 
     // Filter members
     const filteredMembers = members.filter((member) => {
         const matchesSearch =
-            member.profile.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            member.profile.email.toLowerCase().includes(searchTerm.toLowerCase());
+            member.profile.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            member.profile.email?.toLowerCase().includes(searchTerm.toLowerCase());
 
         const matchesStage = filterStage === 'all' || member.current_stage === filterStage;
         const matchesTrack = filterTrack === 'all' || member.track === filterTrack;
 
         return matchesSearch && matchesStage && matchesTrack;
     });
+
+    const isLoading = authLoading || membersLoading;
+
+    if (isLoading) {
+        return (
+            <div className="space-y-8">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <Skeleton className="h-10 w-48 mb-2" />
+                        <Skeleton className="h-4 w-64" />
+                    </div>
+                    <Skeleton className="h-10 w-32" />
+                </div>
+                <div className="grid gap-4 md:grid-cols-4">
+                    {[...Array(4)].map((_, i) => (
+                        <Card key={i}>
+                            <CardHeader className="pb-3">
+                                <Skeleton className="h-4 w-24" />
+                            </CardHeader>
+                            <CardContent>
+                                <Skeleton className="h-8 w-16" />
+                            </CardContent>
+                        </Card>
+                    ))}
+                </div>
+                <Card>
+                    <CardHeader>
+                        <Skeleton className="h-6 w-32" />
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        {[...Array(5)].map((_, i) => (
+                            <div key={i} className="flex items-center justify-between p-4 border rounded-lg">
+                                <div className="flex items-center gap-4">
+                                    <Skeleton className="h-12 w-12 rounded-full" />
+                                    <div className="space-y-2">
+                                        <Skeleton className="h-4 w-40" />
+                                        <Skeleton className="h-3 w-48" />
+                                    </div>
+                                </div>
+                                <Skeleton className="h-8 w-24" />
+                            </div>
+                        ))}
+                    </CardContent>
+                </Card>
+            </div>
+        )
+    }
 
     if (!isAdmin && !isMentor) {
         return (
@@ -121,14 +97,6 @@ export default function MembersPage() {
                     </p>
                 </CardContent>
             </Card>
-        );
-    }
-
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center h-96">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
         );
     }
 
@@ -303,7 +271,7 @@ export default function MembersPage() {
                                             <Select
                                                 value={member.current_stage}
                                                 onValueChange={(value) =>
-                                                    changeMemberStage(member.id, value as PipelineStage)
+                                                    updateMemberStage(member.id, value as PipelineStage)
                                                 }
                                                 disabled={updatingStage === member.id}
                                             >

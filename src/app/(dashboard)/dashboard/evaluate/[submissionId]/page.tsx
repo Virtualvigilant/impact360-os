@@ -50,8 +50,8 @@ export default function EvaluatePage() {
 
     try {
       // Fetch submission
-      const { data: submissionData, error: submissionError } = await supabase
-        .from('submissions')
+      const { data: submissionData, error: submissionError } = await (supabase
+        .from('submissions') as any)
         .select(`
           *,
           project:projects(*)
@@ -64,8 +64,8 @@ export default function EvaluatePage() {
         setSubmission(submissionData);
 
         // Fetch assignment
-        const { data: assignmentData } = await supabase
-          .from('project_assignments')
+        const { data: assignmentData } = await (supabase
+          .from('project_assignments') as any)
           .select('*')
           .eq('id', submissionData.assignment_id)
           .single();
@@ -91,7 +91,7 @@ export default function EvaluatePage() {
 
     try {
       // Create evaluation
-      const { error: evalError } = await supabase.from('evaluations').insert({
+      const { error: evalError } = await (supabase.from('evaluations') as any).insert({
         submission_id: submission.id,
         member_id: submission.member_id,
         evaluator_id: profile.id,
@@ -102,8 +102,8 @@ export default function EvaluatePage() {
       if (evalError) throw evalError;
 
       // Update assignment status
-      const { error: updateError } = await supabase
-        .from('project_assignments')
+      const { error: updateError } = await (supabase
+        .from('project_assignments') as any)
         .update({
           status: 'completed',
           completed_at: new Date().toISOString(),
@@ -113,12 +113,11 @@ export default function EvaluatePage() {
       if (updateError) throw updateError;
 
       // Create notification for member
-      await supabase.from('notifications').insert({
+      await (supabase.from('notifications') as any).insert({
         user_id: submission.member_id,
         title: 'Project Evaluated',
-        message: `Your project submission has been evaluated with an average score of ${
-          Object.values(scores).reduce((a, b) => a + b, 0) / 6
-        }/5`,
+        message: `Your project submission has been evaluated with an average score of ${Object.values(scores).reduce((a, b) => a + b, 0) / 6
+          }/5`,
         type: 'evaluation',
         related_id: submission.id,
       });

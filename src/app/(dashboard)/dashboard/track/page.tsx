@@ -31,8 +31,8 @@ export default function TrackPage() {
 
         try {
             // Fetch member profile
-            const { data: mp } = await supabase
-                .from('member_profiles')
+            const { data: mp } = await (supabase
+                .from('member_profiles') as any)
                 .select('*')
                 .eq('id', profile.id)
                 .single();
@@ -42,8 +42,8 @@ export default function TrackPage() {
                 setCompletedIds(mp.completed_module_ids || []);
 
                 // Fetch curriculum modules for this track
-                const { data: modulesData } = await supabase
-                    .from('curriculum_modules')
+                const { data: modulesData } = await (supabase
+                    .from('curriculum_modules') as any)
                     .select('*')
                     .eq('track', mp.track)
                     .order('order_index', { ascending: true });
@@ -73,8 +73,8 @@ export default function TrackPage() {
 
         const supabase = supabaseClient();
         try {
-            const { error } = await supabase
-                .from('member_profiles')
+            const { error } = await (supabase
+                .from('member_profiles') as any)
                 .update({ completed_module_ids: newIds })
                 .eq('id', profile.id);
 

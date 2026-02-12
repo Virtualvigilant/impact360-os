@@ -59,8 +59,8 @@ export default function CohortDetailPage() {
 
         try {
             // Fetch cohort
-            const { data: cohortData, error: cohortError } = await supabase
-                .from('cohorts')
+            const { data: cohortData, error: cohortError } = await (supabase
+                .from('cohorts') as any)
                 .select('*')
                 .eq('id', cohortId)
                 .single();
@@ -69,8 +69,8 @@ export default function CohortDetailPage() {
             if (cohortData) setCohort(cohortData);
 
             // Fetch members in this cohort
-            const { data: membersData } = await supabase
-                .from('member_profiles')
+            const { data: membersData } = await (supabase
+                .from('member_profiles') as any)
                 .select('*, profile:profiles(*)')
                 .eq('cohort_id', cohortId)
                 .order('created_at', { ascending: false });
@@ -79,11 +79,11 @@ export default function CohortDetailPage() {
 
             // Fetch mentor names
             if (cohortData?.mentor_ids && cohortData.mentor_ids.length > 0) {
-                const { data: mentorsData } = await supabase
-                    .from('profiles')
+                const { data: mentorsData } = await (supabase
+                    .from('profiles') as any)
                     .select('full_name')
-                    .in('id', cohortData.mentor_ids);
-                if (mentorsData) setMentorNames(mentorsData.map((m) => m.full_name));
+                    .in('id', cohortData.mentor_ids as string[]);
+                if (mentorsData) setMentorNames(mentorsData.map((m: any) => m.full_name));
             }
         } catch (error) {
             console.error('Error fetching cohort:', error);
@@ -95,8 +95,8 @@ export default function CohortDetailPage() {
     const removeMember = async (memberId: string) => {
         const supabase = supabaseClient();
         try {
-            const { error } = await supabase
-                .from('member_profiles')
+            const { error } = await (supabase
+                .from('member_profiles') as any)
                 .update({ cohort_id: null })
                 .eq('id', memberId);
 
@@ -336,8 +336,8 @@ function AddMemberDialog({
         const supabase = supabaseClient();
         try {
             // Get members not already in this cohort
-            const { data } = await supabase
-                .from('member_profiles')
+            const { data } = await (supabase
+                .from('member_profiles') as any)
                 .select('*, profile:profiles(*)')
                 .order('created_at', { ascending: false });
 
@@ -367,8 +367,8 @@ function AddMemberDialog({
 
         try {
             // Update cohort_id for each selected member
-            const { error } = await supabase
-                .from('member_profiles')
+            const { error } = await (supabase
+                .from('member_profiles') as any)
                 .update({ cohort_id: cohortId })
                 .in('id', selectedIds);
 
@@ -381,7 +381,7 @@ function AddMemberDialog({
                 message: 'You have been added to a new cohort.',
                 type: 'stage_change',
             }));
-            await supabase.from('notifications').insert(notifications);
+            await (supabase.from('notifications') as any).insert(notifications);
 
             onMembersAdded();
         } catch (error: any) {

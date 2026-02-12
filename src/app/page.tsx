@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -28,8 +29,13 @@ export default function Home() {
       {/* Header / Nav */}
       <header className="px-6 py-4 flex items-center justify-between fixed top-0 w-full z-50 transition-all duration-300 bg-[#0F172A]/80 backdrop-blur-md border-b border-white/10">
         <div className="flex items-center gap-2 font-bold text-xl tracking-tight">
-          <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-cyan-400 to-indigo-600 flex items-center justify-center">
-            <Rocket className="h-5 w-5 text-white" />
+          <div className="relative h-8 w-8 rounded-lg bg-linear-to-br from-cyan-400 to-indigo-600 flex items-center justify-center overflow-hidden">
+            <Image
+              src="/logo.png"
+              alt="Impact360 OS Logo"
+              fill
+              className="object-cover"
+            />
           </div>
           <span>Impact360 OS</span>
         </div>
@@ -62,14 +68,14 @@ export default function Home() {
                 ✨ Transforming Tech Careers
               </Badge>
               <h1 className="text-5xl lg:text-7xl font-bold tracking-tight leading-[1.1]">
-                Build <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-indigo-400">Real-World</span> Tech Experience
+                Build <span className="text-transparent bg-clip-text bg-linear-to-r from-cyan-400 to-indigo-400">Real-World</span> Tech Experience
               </h1>
               <p className="text-xl text-slate-400 max-w-2xl mx-auto md:mx-0 leading-relaxed">
                 Stop doing tutorials. Start shipping code. Impact360 OS connects you with real projects, expert mentors, and a gamified career roadmap.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 pt-4 justify-center md:justify-start">
                 <Link href="/sign-up">
-                  <Button size="lg" className="h-14 px-8 text-lg bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 border-0 shadow-[0_0_30px_rgba(6,182,212,0.4)] transition-all transform hover:scale-105">
+                  <Button size="lg" className="h-14 px-8 text-lg bg-linear-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 border-0 shadow-[0_0_30px_rgba(6,182,212,0.4)] transition-all transform hover:scale-105">
                     Start Your Journey <ArrowRight className="ml-2 h-5 w-5" />
                   </Button>
                 </Link>
@@ -99,13 +105,13 @@ export default function Home() {
             {/* Hero Graphic / Glass Card Stack */}
             <div className="flex-1 relative w-full h-[500px] hidden md:block perspective-[2000px]">
               {/* Card 1 (Back) */}
-              <div className="absolute top-0 right-10 w-[300px] h-[400px] rounded-3xl bg-linear-to-br from-white/5 to-white/0 border border-white/10 backdrop-blur-md rotate-[-6deg] translate-y-8 opacity-60 transform transition-transform hover:rotate-[-8deg] shadow-2xl">
+              <div className="absolute top-0 right-10 w-[300px] h-[400px] rounded-3xl bg-linear-to-br from-white/5 to-white/0 border border-white/10 backdrop-blur-md -rotate-6 translate-y-8 opacity-60 transform transition-transform hover:-rotate-8 shadow-2xl">
                 <div className="p-6">
                   <div className="flex justify-between items-center mb-6">
                     <div className="text-sm text-white/50">Activity</div>
                     <div className="h-8 w-8 rounded-full bg-white/10 flex items-center justify-center"><Layout className="h-4 w-4" /></div>
                   </div>
-                  <div className="h-32 rounded-xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20 mb-4" />
+                  <div className="h-32 rounded-xl bg-linear-to-br from-indigo-500/20 to-purple-500/20 mb-4" />
                   <div className="space-y-3">
                     <div className="h-2 w-3/4 bg-white/10 rounded-full" />
                     <div className="h-2 w-1/2 bg-white/10 rounded-full" />
@@ -114,10 +120,10 @@ export default function Home() {
               </div>
 
               {/* Card 2 (Middle) */}
-              <div className="absolute top-10 right-[15%] w-[320px] h-[450px] rounded-3xl bg-linear-to-br from-white/10 to-white/0 border border-white/20 backdrop-blur-xl rotate-[-3deg] translate-y-4 opacity-80 transform transition-transform hover:rotate-[-5deg] hover:translate-y-2 shadow-[0_20px_50px_rgba(0,0,0,0.5)] z-10">
+              <div className="absolute top-10 right-[15%] w-[320px] h-[450px] rounded-3xl bg-linear-to-br from-white/10 to-white/0 border border-white/20 backdrop-blur-xl -rotate-3 translate-y-4 opacity-80 transform transition-transform hover:-rotate-5 hover:translate-y-2 shadow-[0_20px_50px_rgba(0,0,0,0.5)] z-10">
                 <div className="p-6 flex flex-col h-full">
                   <div className="flex items-center gap-3 mb-8">
-                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center shadow-lg">
+                    <div className="h-10 w-10 rounded-full bg-linear-to-br from-green-400 to-emerald-600 flex items-center justify-center shadow-lg">
                       <CheckCircle2 className="h-5 w-5 text-white" />
                     </div>
                     <div>
@@ -146,15 +152,15 @@ export default function Home() {
                       <h3 className="text-xs font-semibold tracking-wider text-cyan-400 uppercase mb-1">Current Level</h3>
                       <div className="text-4xl font-bold">Lvl 5</div>
                     </div>
-                    <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center shadow-lg group-hover:shadow-[0_0_20px_rgba(6,182,212,0.5)] transition-shadow">
+                    <div className="h-12 w-12 rounded-2xl bg-linear-to-br from-cyan-400 to-blue-600 flex items-center justify-center shadow-lg group-hover:shadow-[0_0_20px_rgba(6,182,212,0.5)] transition-shadow">
                       <Rocket className="h-6 w-6 text-white" />
                     </div>
                   </div>
 
                   {/* Progress Circle Visual */}
                   <div className="flex-1 flex items-center justify-center relative my-4">
-                    <div className="w-48 h-48 rounded-full border-[12px] border-white/5 flex items-center justify-center relative">
-                      <div className="absolute inset-0 rounded-full border-[12px] border-cyan-500 border-t-transparent rotate-45" />
+                    <div className="w-48 h-48 rounded-full border-12 border-white/5 flex items-center justify-center relative">
+                      <div className="absolute inset-0 rounded-full border-12 border-cyan-500 border-t-transparent rotate-45" />
                       <div className="text-center">
                         <div className="text-3xl font-bold">85%</div>
                         <div className="text-xs text-white/50 uppercase tracking-widest">XP Gained</div>
@@ -168,7 +174,7 @@ export default function Home() {
                       <span className="text-cyan-300">Rising Star</span>
                     </div>
                     <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
-                      <div className="h-full w-[85%] bg-gradient-to-r from-cyan-400 to-indigo-500 rounded-full" />
+                      <div className="h-full w-[85%] bg-linear-to-r from-cyan-400 to-indigo-500 rounded-full" />
                     </div>
                   </div>
                 </div>
@@ -233,12 +239,12 @@ export default function Home() {
                 }
               ].map((item, i) => (
                 <div key={i} className="group relative p-1 rounded-3xl bg-linear-to-b from-white/10 to-transparent hover:from-white/20 transition-all duration-500">
-                  <div className="absolute inset-0 rounded-3xl bg-gradient-to-b from-white/5 to-transparent blur-md -z-10" />
+                  <div className="absolute inset-0 rounded-3xl bg-linear-to-b from-white/5 to-transparent blur-md -z-10" />
                   <div className="h-full bg-[#0F172A] rounded-[22px] p-8 border border-white/5 relative overflow-hidden">
                     {/* Hover Gradient Bloom */}
-                    <div className={`absolute -top-20 -right-20 w-40 h-40 bg-gradient-to-br ${item.gradient} blur-[60px] opacity-20 group-hover:opacity-40 transition-opacity`} />
+                    <div className={`absolute -top-20 -right-20 w-40 h-40 bg-linear-to-br ${item.gradient} blur-[60px] opacity-20 group-hover:opacity-40 transition-opacity`} />
 
-                    <div className={`h-14 w-14 rounded-2xl bg-gradient-to-br ${item.gradient} flex items-center justify-center mb-6 shadow-lg transform group-hover:-translate-y-1 transition-transform`}>
+                    <div className={`h-14 w-14 rounded-2xl bg-linear-to-br ${item.gradient} flex items-center justify-center mb-6 shadow-lg transform group-hover:-translate-y-1 transition-transform`}>
                       <item.icon className="h-7 w-7 text-white" />
                     </div>
                     <h3 className="text-2xl font-bold mb-4">{item.title}</h3>
@@ -322,7 +328,14 @@ export default function Home() {
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between gap-12">
           <div className="space-y-4 max-w-xs">
             <div className="flex items-center gap-2 font-bold text-xl text-white">
-              <Rocket className="h-6 w-6 text-cyan-400" />
+              <div className="relative h-8 w-8">
+                <Image
+                  src="/logo.png"
+                  alt="Impact360 OS Logo"
+                  fill
+                  className="object-contain"
+                />
+              </div>
               <span>Impact360 OS</span>
             </div>
             <p className="text-sm">

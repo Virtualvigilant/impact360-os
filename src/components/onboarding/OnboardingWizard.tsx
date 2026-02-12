@@ -114,8 +114,8 @@ export function OnboardingWizard({ memberId, memberName, onComplete }: Onboardin
         const supabase = supabaseClient();
 
         try {
-            const { error } = await supabase
-                .from('member_profiles')
+            const { error } = await (supabase
+                .from('member_profiles') as any)
                 .update({
                     track: selectedTrack,
                     experience_level: experienceLevel,

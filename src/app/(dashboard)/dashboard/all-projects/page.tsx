@@ -13,30 +13,18 @@ import { DIFFICULTY_COLORS, DIFFICULTY_LABELS, TRACK_LABELS } from '@/lib/utils/
 import { formatDate } from '@/lib/utils/format';
 import {
     Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
     DialogTrigger,
 } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
+import { ProjectDialog } from '@/components/admin/ProjectDialog';
 
 export default function AllProjectsPage() {
     const { profile, isAdmin, isMentor } = useAuth();
     const [projects, setProjects] = useState<Project[]>([]);
     const [loading, setLoading] = useState(true);
-    const [createDialogOpen, setCreateDialogOpen] = useState(false);
+    const [projectDialogOpen, setProjectDialogOpen] = useState(false);
     const [assignDialogOpen, setAssignDialogOpen] = useState(false);
     const [selectedProject, setSelectedProject] = useState<{ id: string; title: string } | null>(null);
+    const [editingProject, setEditingProject] = useState<Project | undefined>(undefined);
 
     useEffect(() => {
         if (profile?.id && (isAdmin || isMentor)) {
@@ -59,6 +47,20 @@ export default function AllProjectsPage() {
             console.error('Error fetching projects:', error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleDelete = async (projectId: string) => {
+        if (!confirm('Are you sure you want to delete this project? This action cannot be undone.')) return;
+
+        const supabase = supabaseClient();
+        try {
+            const { error } = await supabase.from('projects').delete().eq('id', projectId);
+            if (error) throw error;
+            fetchProjects();
+        } catch (error) {
+            console.error('Error deleting project:', error);
+            alert('Failed to delete project. It may have associated assignments.');
         }
     };
 
@@ -92,20 +94,20 @@ export default function AllProjectsPage() {
                     </p>
                 </div>
                 {isAdmin && (
-                    <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-                        <DialogTrigger asChild>
-                            <Button>
-                                <Plus className="mr-2 h-4 w-4" />
-                                Create Project
-                            </Button>
-                        </DialogTrigger>
-                        <CreateProjectDialog
+                    <>
+                        <Button onClick={() => { setEditingProject(undefined); setProjectDialogOpen(true); }}>
+                            <Plus className="mr-2 h-4 w-4" />
+                            Create Project
+                        </Button>
+                        <ProjectDialog
+                            open={projectDialogOpen}
+                            onOpenChange={setProjectDialogOpen}
+                            initialData={editingProject}
                             onSuccess={() => {
-                                setCreateDialogOpen(false);
                                 fetchProjects();
                             }}
                         />
-                    </Dialog>
+                    </>
                 )}
             </div>
 
@@ -228,18 +230,25 @@ export default function AllProjectsPage() {
                                             >
                                                 Assign to Member
                                             </Button>
-                                            <Button variant="outline" size="sm">
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => {
+                                                    setEditingProject(project);
+                                                    setProjectDialogOpen(true);
+                                                }}
+                                            >
                                                 Edit
                                             </Button>
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                className="text-destructive hover:text-destructive"
+                                                onClick={() => handleDelete(project.id)}
+                                            >
+                                                Delete
+                                            </Button>
                                         </>
-                                    )}
-                                    {selectedProject && (
-                                        <AssignProjectDialog
-                                            isOpen={assignDialogOpen}
-                                            onClose={() => setAssignDialogOpen(false)}
-                                            projectId={selectedProject.id}
-                                            projectTitle={selectedProject.title}
-                                        />
                                     )}
                                 </div>
                             </CardContent>
@@ -247,166 +256,14 @@ export default function AllProjectsPage() {
                     ))
                 )}
             </div>
+            {selectedProject && (
+                <AssignProjectDialog
+                    isOpen={assignDialogOpen}
+                    onClose={() => setAssignDialogOpen(false)}
+                    projectId={selectedProject.id}
+                    projectTitle={selectedProject.title}
+                />
+            )}
         </div>
-    );
-}
-
-function CreateProjectDialog({ onSuccess }: { onSuccess: () => void }) {
-    const { profile } = useAuth();
-    const [loading, setLoading] = useState(false);
-    const [formData, setFormData] = useState({
-        title: '',
-        description: '',
-        difficulty: '',
-        track: '',
-        tech_stack: '',
-        deliverables: '',
-        deadline: '',
-    });
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setLoading(true);
-
-        const supabase = supabaseClient();
-
-        try {
-            const { error } = await supabase.from('projects').insert({
-                title: formData.title,
-                description: formData.description,
-                difficulty: formData.difficulty,
-                track: formData.track,
-                tech_stack: formData.tech_stack.split(',').map((s) => s.trim()).filter(Boolean),
-                deliverables: formData.deliverables.split('\n').map((s) => s.trim()).filter(Boolean),
-                deadline: formData.deadline || null,
-                is_active: true,
-                created_by: profile?.id,
-            });
-
-            if (error) throw error;
-            onSuccess();
-        } catch (error) {
-            console.error('Error creating project:', (error as any).message || error);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    return (
-        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-                <DialogTitle>Create New Project</DialogTitle>
-                <DialogDescription>
-                    Define a new project for members to work on
-                </DialogDescription>
-            </DialogHeader>
-
-            <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                    <Label htmlFor="title">Project Title *</Label>
-                    <Input
-                        id="title"
-                        placeholder="e.g., Build a Todo App"
-                        value={formData.title}
-                        onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                        required
-                    />
-                </div>
-
-                <div className="space-y-2">
-                    <Label htmlFor="description">Description *</Label>
-                    <Textarea
-                        id="description"
-                        placeholder="Detailed project description..."
-                        rows={4}
-                        value={formData.description}
-                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                        required
-                    />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="difficulty">Difficulty *</Label>
-                        <Select
-                            value={formData.difficulty}
-                            onValueChange={(value) => setFormData({ ...formData, difficulty: value })}
-                            required
-                        >
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select difficulty" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="beginner">Beginner</SelectItem>
-                                <SelectItem value="intermediate">Intermediate</SelectItem>
-                                <SelectItem value="advanced">Advanced</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                        <Label htmlFor="track">Track *</Label>
-                        <Select
-                            value={formData.track}
-                            onValueChange={(value) => setFormData({ ...formData, track: value })}
-                            required
-                        >
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select track" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="web_development">Web Development</SelectItem>
-                                <SelectItem value="ai_ml">AI & Machine Learning</SelectItem>
-                                <SelectItem value="design">UI/UX Design</SelectItem>
-                                <SelectItem value="mobile">Mobile Development</SelectItem>
-                                <SelectItem value="devops">DevOps Engineering</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                </div>
-
-                <div className="space-y-2">
-                    <Label htmlFor="tech_stack">Tech Stack (comma-separated)</Label>
-                    <Input
-                        id="tech_stack"
-                        placeholder="e.g., React, TypeScript, Tailwind CSS"
-                        value={formData.tech_stack}
-                        onChange={(e) => setFormData({ ...formData, tech_stack: e.target.value })}
-                    />
-                </div>
-
-                <div className="space-y-2">
-                    <Label htmlFor="deliverables">Deliverables (one per line)</Label>
-                    <Textarea
-                        id="deliverables"
-                        placeholder="e.g., Working GitHub repository&#10;Deployed demo link&#10;README documentation"
-                        rows={4}
-                        value={formData.deliverables}
-                        onChange={(e) => setFormData({ ...formData, deliverables: e.target.value })}
-                    />
-                </div>
-
-                <div className="space-y-2">
-                    <Label htmlFor="deadline">Deadline (Optional)</Label>
-                    <Input
-                        id="deadline"
-                        type="date"
-                        value={formData.deadline}
-                        onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
-                    />
-                </div>
-
-                <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? (
-                        <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Creating...
-                        </>
-                    ) : (
-                        'Create Project'
-                    )}
-                </Button>
-            </form>
-        </DialogContent>
     );
 }

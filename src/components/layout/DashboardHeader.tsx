@@ -2,6 +2,7 @@
 
 import { LogOut, Menu, User } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,
@@ -50,8 +51,13 @@ export function DashboardHeader({ onMenuClick }: DashboardHeaderProps) {
 
                 {/* Logo */}
                 <Link href="/" className="flex items-center gap-2 font-semibold hover:opacity-80 transition-opacity">
-                    <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center text-primary-foreground">
-                        I360
+                    <div className="relative h-8 w-8 rounded-lg overflow-hidden">
+                        <Image
+                            src="/logo.png"
+                            alt="Impact360 OS Logo"
+                            fill
+                            className="object-cover"
+                        />
                     </div>
                     <span className="hidden md:inline-block">Impact360 OS</span>
                 </Link>
@@ -91,9 +97,11 @@ export function DashboardHeader({ onMenuClick }: DashboardHeaderProps) {
                                 </div>
                             </DropdownMenuLabel>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem>
-                                <User className="mr-2 h-4 w-4" />
-                                <span>Profile</span>
+                            <DropdownMenuItem asChild>
+                                <Link href="/dashboard/profile" className="cursor-pointer w-full flex items-center">
+                                    <User className="mr-2 h-4 w-4" />
+                                    <span>Profile</span>
+                                </Link>
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem onClick={signOut} className="text-red-600">

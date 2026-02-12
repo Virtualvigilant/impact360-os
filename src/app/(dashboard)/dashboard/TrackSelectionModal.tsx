@@ -48,8 +48,8 @@ export function TrackSelectionModal({ isOpen, memberId, onComplete }: TrackSelec
     const supabase = supabaseClient();
 
     try {
-      const { error } = await supabase
-        .from('member_profiles')
+      const { error } = await (supabase
+        .from('member_profiles') as any)
         .update({
           track: selectedTrack,
           current_stage: 'training',
@@ -84,9 +84,8 @@ export function TrackSelectionModal({ isOpen, memberId, onComplete }: TrackSelec
             return (
               <Card
                 key={track}
-                className={`p-4 cursor-pointer transition-all ${
-                  isSelected ? 'border-primary bg-primary/5' : 'hover:border-primary/50'
-                }`}
+                className={`p-4 cursor-pointer transition-all ${isSelected ? 'border-primary bg-primary/5' : 'hover:border-primary/50'
+                  }`}
                 onClick={() => setSelectedTrack(track)}
               >
                 <div className="flex items-start gap-4">

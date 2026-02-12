@@ -38,8 +38,8 @@ export default function SettingsPage() {
 
     try {
       // Update profile
-      const { error: profileError } = await supabase
-        .from('profiles')
+      const { error: profileError } = await (supabase
+        .from('profiles') as any)
         .update({
           full_name: formData.full_name,
         })
@@ -49,8 +49,8 @@ export default function SettingsPage() {
 
       // Update member profile if user is a member
       if (profile.role === 'member') {
-        const { error: memberError } = await supabase
-          .from('member_profiles')
+        const { error: memberError } = await (supabase
+          .from('member_profiles') as any)
           .update({
             bio: formData.bio,
             github_url: formData.github_url,

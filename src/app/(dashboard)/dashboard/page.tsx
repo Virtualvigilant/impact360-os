@@ -3,52 +3,43 @@
 import { useEffect, useState } from 'react';
 import { OnboardingWizard } from '@/components/onboarding/OnboardingWizard';
 import { useAuth } from '@/lib/hooks/useAuth';
+import { useProjects } from '@/lib/hooks/useProjects';
 import { supabaseClient } from '@/lib/supabase/client';
-import { MemberProfile, ProjectAssignment, Evaluation } from '@/types/database.types';
+import { MemberProfile, Evaluation } from '@/types/database.types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 import { STAGE_LABELS, TRACK_LABELS, STAGE_COLORS } from '@/lib/utils/constants';
-import { Loader2, TrendingUp, Target, Award, FolderKanban } from 'lucide-react';
+import { TrendingUp, Target, Award, FolderKanban } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function DashboardPage() {
     const { profile, loading: authLoading } = useAuth();
+    const { assignments, loading: projectsLoading } = useProjects(profile?.id);
     const [memberProfile, setMemberProfile] = useState<MemberProfile | null>(null);
-    const [assignments, setAssignments] = useState<ProjectAssignment[]>([]);
     const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
-    const [dataLoading, setDataLoading] = useState(true);
+    const [profileLoading, setProfileLoading] = useState(true);
     const [showOnboarding, setShowOnboarding] = useState(false);
 
-    const fetchDashboardData = async () => {
+    const fetchProfileAndEvaluations = async () => {
         if (!profile?.id) return;
-
+        setProfileLoading(true);
         const supabase = supabaseClient();
 
         try {
             // Fetch member profile
-            const { data: memberData } = await supabase
-                .from('member_profiles')
+            const { data: memberData } = await (supabase
+                .from('member_profiles') as any)
                 .select('*')
                 .eq('id', profile.id)
                 .single();
 
             if (memberData) setMemberProfile(memberData);
 
-            // Fetch project assignments
-            const { data: assignmentsData } = await supabase
-                .from('project_assignments')
-                .select(`
-          *,
-          project:projects(*)
-        `)
-                .eq('member_id', profile.id)
-                .order('assigned_at', { ascending: false });
-
-            if (assignmentsData) setAssignments(assignmentsData);
-
             // Fetch evaluations
-            const { data: evaluationsData } = await supabase
-                .from('evaluations')
+            const { data: evaluationsData } = await (supabase
+                .from('evaluations') as any)
                 .select('*')
                 .eq('member_id', profile.id)
                 .order('evaluated_at', { ascending: false });
@@ -56,17 +47,17 @@ export default function DashboardPage() {
             if (evaluationsData) setEvaluations(evaluationsData);
         } catch (error) {
             console.error('Error fetching dashboard data:', error);
+            toast.error('Failed to load dashboard data');
         } finally {
-            setDataLoading(false);
+            setProfileLoading(false);
         }
     };
 
     useEffect(() => {
         if (!authLoading && profile?.id) {
-            fetchDashboardData();
+            fetchProfileAndEvaluations();
         } else if (!authLoading) {
-            // Auth finished but no profile - stop loading
-            setDataLoading(false);
+            setProfileLoading(false);
         }
     }, [profile?.id, authLoading]);
 
@@ -76,11 +67,40 @@ export default function DashboardPage() {
         }
     }, [memberProfile]);
 
-    // Show loading while auth or data is loading
-    if (authLoading || dataLoading) {
+    const isLoading = authLoading || profileLoading || projectsLoading;
+
+    // Loading State
+    if (isLoading) {
         return (
-            <div className="flex items-center justify-center h-96">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <div className="space-y-8">
+                <div>
+                    <Skeleton className="h-10 w-64 mb-2" />
+                    <Skeleton className="h-5 w-96" />
+                </div>
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                    {[...Array(4)].map((_, i) => (
+                        <Card key={i}>
+                            <CardHeader className="pb-2">
+                                <Skeleton className="h-4 w-24" />
+                            </CardHeader>
+                            <CardContent>
+                                <Skeleton className="h-8 w-16 mb-2" />
+                                <Skeleton className="h-4 w-full" />
+                            </CardContent>
+                        </Card>
+                    ))}
+                </div>
+                <Card>
+                    <CardHeader>
+                        <Skeleton className="h-6 w-32 mb-2" />
+                        <Skeleton className="h-4 w-48" />
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        {[...Array(3)].map((_, i) => (
+                            <Skeleton key={i} className="h-20 w-full" />
+                        ))}
+                    </CardContent>
+                </Card>
             </div>
         );
     }
@@ -93,7 +113,7 @@ export default function DashboardPage() {
                 memberName={profile.full_name || 'there'}
                 onComplete={() => {
                     setShowOnboarding(false);
-                    fetchDashboardData();
+                    fetchProfileAndEvaluations();
                 }}
             />
         );

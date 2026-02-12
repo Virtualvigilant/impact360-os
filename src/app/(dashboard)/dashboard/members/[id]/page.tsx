@@ -35,6 +35,7 @@ import {
     Star,
     Calendar,
     CheckCircle2,
+    Users,
 } from 'lucide-react';
 import { TRACK_LABELS, STAGE_LABELS, STAGE_COLORS } from '@/lib/utils/constants';
 import { formatDate, getInitials } from '@/lib/utils/format';
@@ -48,6 +49,7 @@ export default function MemberDetailPage() {
     const [member, setMember] = useState<MemberWithProfile | null>(null);
     const [assignments, setAssignments] = useState<ProjectAssignment[]>([]);
     const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
+    const [teams, setTeams] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [updatingStage, setUpdatingStage] = useState(false);
 
@@ -63,8 +65,8 @@ export default function MemberDetailPage() {
 
         try {
             // Fetch member profile
-            const { data: memberData, error: memberError } = await supabase
-                .from('member_profiles')
+            const { data: memberData, error: memberError } = await (supabase
+                .from('member_profiles') as any)
                 .select(`*, profile:profiles(*)`)
                 .eq('id', memberId)
                 .single();
@@ -73,17 +75,27 @@ export default function MemberDetailPage() {
             if (memberData) setMember(memberData as MemberWithProfile);
 
             // Fetch assignments
-            const { data: assignmentsData } = await supabase
-                .from('project_assignments')
+            const { data: assignmentsData } = await (supabase
+                .from('project_assignments') as any)
                 .select(`*, project:projects(*)`)
                 .eq('member_id', memberId)
                 .order('assigned_at', { ascending: false });
 
             if (assignmentsData) setAssignments(assignmentsData);
 
+            if (assignmentsData) setAssignments(assignmentsData);
+
+            // Fetch team membership
+            const { data: teamData } = await (supabase
+                .from('team_members') as any)
+                .select('*, team:teams(*)')
+                .eq('user_id', memberId);
+
+            if (teamData) setTeams(teamData);
+
             // Fetch evaluations
-            const { data: evaluationsData } = await supabase
-                .from('evaluations')
+            const { data: evaluationsData } = await (supabase
+                .from('evaluations') as any)
                 .select('*')
                 .eq('member_id', memberId)
                 .order('evaluated_at', { ascending: false });
@@ -108,14 +120,14 @@ export default function MemberDetailPage() {
                 updateData.client_ready_date = new Date().toISOString();
             }
 
-            const { error } = await supabase
-                .from('member_profiles')
+            const { error } = await (supabase
+                .from('member_profiles') as any)
                 .update(updateData)
                 .eq('id', member.id);
 
             if (error) throw error;
 
-            await supabase.from('notifications').insert({
+            await (supabase.from('notifications') as any).insert({
                 user_id: member.id,
                 title: 'Pipeline Stage Updated',
                 message: `Your pipeline stage has been updated to ${STAGE_LABELS[newStage]}.`,
@@ -255,6 +267,12 @@ export default function MemberDetailPage() {
                                         Client Ready
                                     </Badge>
                                 )}
+                                {teams.map(t => (
+                                    <Badge key={t.team_id} variant="secondary" className="flex items-center gap-1">
+                                        <Users className="h-3 w-3" />
+                                        {t.team.name}
+                                    </Badge>
+                                ))}
                             </div>
 
                             {/* Social Links */}

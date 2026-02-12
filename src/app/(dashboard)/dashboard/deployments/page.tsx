@@ -41,8 +41,8 @@ export default function DeploymentsPage() {
 
         try {
             // Fetch members in evaluation or deployment stages, or marked as client ready
-            const { data, error } = await supabase
-                .from('member_profiles')
+            const { data, error } = await (supabase
+                .from('member_profiles') as any)
                 .select(`
           *,
           profile:profiles(*)
@@ -64,8 +64,8 @@ export default function DeploymentsPage() {
         const supabase = supabaseClient();
 
         try {
-            const { error } = await supabase
-                .from('member_profiles')
+            const { error } = await (supabase
+                .from('member_profiles') as any)
                 .update({
                     is_client_ready: true,
                     client_ready_date: new Date().toISOString(),
@@ -76,7 +76,8 @@ export default function DeploymentsPage() {
             if (error) throw error;
 
             // Send notification
-            await supabase.from('notifications').insert({
+            // Send notification
+            await (supabase.from('notifications') as any).insert({
                 user_id: memberId,
                 title: '🎉 You\'re Client Ready!',
                 message: 'Congratulations! You\'ve been marked as client-ready and added to the deployment pool.',
@@ -101,14 +102,14 @@ export default function DeploymentsPage() {
                 updateData.is_client_ready = false;
             }
 
-            const { error } = await supabase
-                .from('member_profiles')
+            const { error } = await (supabase
+                .from('member_profiles') as any)
                 .update(updateData)
                 .eq('id', memberId);
 
             if (error) throw error;
 
-            await supabase.from('notifications').insert({
+            await (supabase.from('notifications') as any).insert({
                 user_id: memberId,
                 title: 'Pipeline Stage Updated',
                 message: `Your pipeline stage has been updated to ${STAGE_LABELS[stage as keyof typeof STAGE_LABELS]}.`,

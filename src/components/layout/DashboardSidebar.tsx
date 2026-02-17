@@ -126,7 +126,9 @@ export function DashboardSidebar({ className, onNavClick }: DashboardSidebarProp
                     <div className="space-y-1">
                         {filteredNavItems.map((item) => {
                             const Icon = item.icon;
-                            const isActive = pathname === item.href;
+                            const isActive = item.href === '/dashboard'
+                                ? pathname === '/dashboard'
+                                : pathname.startsWith(item.href);
 
                             return (
                                 <Link

@@ -170,7 +170,7 @@ export function CreateTeamDialog({
                                                     <div className="flex flex-col">
                                                         <span className="text-sm font-medium">{member.profile.full_name}</span>
                                                         <span className="text-xs text-muted-foreground capitalize">
-                                                            {member.track ? TRACK_LABELS[member.track] : 'No Track'} • {STAGE_LABELS[member.current_stage]}
+                                                            {member.track ? TRACK_LABELS[member.track as keyof typeof TRACK_LABELS] : 'No Track'} • {STAGE_LABELS[member.current_stage as keyof typeof STAGE_LABELS]}
                                                         </span>
                                                     </div>
                                                     {isSelected && <UserPlus className="h-4 w-4 text-primary" />}

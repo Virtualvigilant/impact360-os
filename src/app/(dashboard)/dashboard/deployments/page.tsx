@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { supabaseClient } from '@/lib/supabase/client';
 import { MemberProfile } from '@/types/database.types';
@@ -54,6 +55,7 @@ export default function DeploymentsPage() {
             if (data) setMembers(data);
         } catch (error) {
             console.error('Error fetching deployment members:', error);
+            toast.error('Failed to load deployment data');
         } finally {
             setLoading(false);
         }
@@ -76,7 +78,6 @@ export default function DeploymentsPage() {
             if (error) throw error;
 
             // Send notification
-            // Send notification
             await (supabase.from('notifications') as any).insert({
                 user_id: memberId,
                 title: '🎉 You\'re Client Ready!',
@@ -87,6 +88,7 @@ export default function DeploymentsPage() {
             await fetchDeploymentMembers();
         } catch (error) {
             console.error('Error marking as client ready:', error);
+            toast.error('Failed to mark as client ready');
         } finally {
             setUpdating(null);
         }
@@ -119,6 +121,7 @@ export default function DeploymentsPage() {
             await fetchDeploymentMembers();
         } catch (error) {
             console.error('Error updating stage:', error);
+            toast.error('Failed to update pipeline stage');
         } finally {
             setUpdating(null);
         }
@@ -368,7 +371,7 @@ function MemberDeployCard({ member, updating, actions }: MemberDeployCardProps) 
                                 {member.track && (
                                     <span className="text-xs text-muted-foreground">
                                         <Briefcase className="inline h-3 w-3 mr-1" />
-                                        {TRACK_LABELS[member.track]}
+                                        {TRACK_LABELS[member.track as keyof typeof TRACK_LABELS]}
                                     </span>
                                 )}
                                 <span className="text-xs text-muted-foreground">

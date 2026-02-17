@@ -25,6 +25,7 @@ export interface MemberProfile {
     github_url?: string;
     linkedin_url?: string;
     portfolio_url?: string;
+    phone_number?: string;
     experience_level?: ExperienceLevel;
     interests?: string[];
     level: number;
@@ -198,6 +199,7 @@ export interface MemberProfileInsert {
     github_url?: string;
     linkedin_url?: string;
     portfolio_url?: string;
+    phone_number?: string;
     experience_level?: ExperienceLevel;
     interests?: string[];
     level?: number;

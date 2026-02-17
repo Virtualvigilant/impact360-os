@@ -299,7 +299,7 @@ export default function MembersPage() {
                                         )}
                                         <div className="flex flex-wrap gap-2 justify-end">
                                             {member.track && (
-                                                <Badge variant="outline" className="whitespace-nowrap">{TRACK_LABELS[member.track]}</Badge>
+                                                <Badge variant="outline" className="whitespace-nowrap">{TRACK_LABELS[member.track as keyof typeof TRACK_LABELS]}</Badge>
                                             )}
                                             {member.is_client_ready && (
                                                 <Badge variant="default" className="bg-green-600 whitespace-nowrap">

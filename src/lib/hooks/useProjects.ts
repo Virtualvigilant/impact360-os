@@ -42,8 +42,8 @@ export function useProjects(userId?: string) {
                 setAssignments(typedAssignments);
             }
         } catch (error: any) {
-            console.error('Error fetching assignments:', error);
-            toast.error('Failed to fetch project assignments');
+            console.error('Error fetching assignments:', JSON.stringify(error, null, 2));
+            toast.error('Failed to fetch project assignments: ' + (error?.message || 'Unknown error'));
         } finally {
             setLoading(false);
         }

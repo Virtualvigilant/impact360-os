@@ -11,13 +11,35 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { STAGE_LABELS, TRACK_LABELS, STAGE_COLORS } from '@/lib/utils/constants';
-import { TrendingUp, Target, Award, FolderKanban } from 'lucide-react';
+import { TrendingUp, Target, Award, FolderKanban, Users } from 'lucide-react';
 import { toast } from 'sonner';
+import Link from 'next/link';
+import { formatDate } from '@/lib/utils/format';
+
+import { Button } from '@/components/ui/button';
+
+interface ExtendedMemberProfile extends MemberProfile {
+    cohort?: {
+        id: string;
+        name: string;
+        description: string;
+        track: string;
+        is_active: boolean;
+    };
+    team_members?: {
+        role: string;
+        team: {
+            id: string;
+            name: string;
+            created_at: string;
+        };
+    }[];
+}
 
 export default function DashboardPage() {
     const { profile, loading: authLoading } = useAuth();
     const { assignments, loading: projectsLoading } = useProjects(profile?.id);
-    const [memberProfile, setMemberProfile] = useState<MemberProfile | null>(null);
+    const [memberProfile, setMemberProfile] = useState<ExtendedMemberProfile | null>(null);
     const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
     const [profileLoading, setProfileLoading] = useState(true);
     const [showOnboarding, setShowOnboarding] = useState(false);
@@ -28,14 +50,37 @@ export default function DashboardPage() {
         const supabase = supabaseClient();
 
         try {
-            // Fetch member profile
-            const { data: memberData } = await (supabase
+            // Fetch member profile with cohort (FK exists: member_profiles.cohort_id -> cohorts.id)
+            const { data: memberData, error: memberError } = await (supabase
                 .from('member_profiles') as any)
-                .select('*')
+                .select(`
+                    *,
+                    cohort:cohorts(id, name, description, track, is_active)
+                `)
                 .eq('id', profile.id)
                 .single();
 
-            if (memberData) setMemberProfile(memberData);
+            if (memberError) console.error('Dashboard memberError:', JSON.stringify(memberError, null, 2));
+
+            // Fetch team membership separately (no FK from member_profiles to team_members)
+            const { data: teamData, error: teamError } = await (supabase
+                .from('team_members') as any)
+                .select(`
+                    role,
+                    team:teams(id, name, created_at)
+                `)
+                .eq('user_id', profile.id);
+
+            if (teamError) console.error('Dashboard teamError:', JSON.stringify(teamError, null, 2));
+
+            // Combine into a single object
+            if (memberData) {
+                const combined = {
+                    ...memberData,
+                    team_members: teamData || []
+                };
+                setMemberProfile(combined as any);
+            }
 
             // Fetch evaluations
             const { data: evaluationsData } = await (supabase
@@ -46,8 +91,8 @@ export default function DashboardPage() {
 
             if (evaluationsData) setEvaluations(evaluationsData);
         } catch (error) {
-            console.error('Error fetching dashboard data:', error);
-            toast.error('Failed to load dashboard data');
+            console.error('Error fetching dashboard data:', JSON.stringify(error, null, 2));
+            toast.error('Failed to load dashboard data: ' + ((error as any)?.message || 'Unknown error'));
         } finally {
             setProfileLoading(false);
         }
@@ -137,6 +182,74 @@ export default function DashboardPage() {
                 </p>
             </div>
 
+            {/* Team and Cohort Info */}
+            <div className="grid gap-4 md:grid-cols-2">
+                {/* Cohort Info */}
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">My Cohort</CardTitle>
+                        <Users className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        {memberProfile?.cohort ? (
+                            <div className="space-y-3 mt-2">
+                                <div>
+                                    <div className="text-lg font-bold">{memberProfile.cohort.name}</div>
+                                    <p className="text-xs text-muted-foreground">{memberProfile.cohort.description || 'No description'}</p>
+                                </div>
+                                <div className="flex gap-2 text-xs">
+                                    <Badge variant="secondary">{TRACK_LABELS[memberProfile.cohort.track as keyof typeof TRACK_LABELS] || memberProfile.cohort.track}</Badge>
+                                    <Badge variant="outline">{memberProfile.cohort.is_active ? 'Active' : 'Completed'}</Badge>
+                                </div>
+                                <Button size="sm" variant="outline" className="w-full" asChild>
+                                    <Link href={`/dashboard/cohorts/${memberProfile.cohort.id}`}>
+                                        View Cohort
+                                    </Link>
+                                </Button>
+                            </div>
+                        ) : (
+                            <div className="text-sm text-muted-foreground py-4">
+                                You are not assigned to a cohort yet.
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+
+                {/* Team Info */}
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">My Team</CardTitle>
+                        <FolderKanban className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        {memberProfile?.team_members?.[0]?.team ? (
+                            <div className="space-y-3 mt-2">
+                                <div>
+                                    <div className="text-lg font-bold">{memberProfile.team_members[0].team.name}</div>
+                                    <p className="text-xs text-muted-foreground">
+                                        Role: <span className="capitalize">{memberProfile.team_members[0].role}</span>
+                                    </p>
+                                </div>
+                                <div className="flex gap-2 text-xs">
+                                    <Badge variant="secondary">
+                                        {formatDate(memberProfile.team_members[0].team.created_at)}
+                                    </Badge>
+                                </div>
+                                <Button size="sm" variant="outline" className="w-full" asChild>
+                                    <Link href={`/dashboard/teams/${memberProfile.team_members[0].team.id}`}>
+                                        View Team
+                                    </Link>
+                                </Button>
+                            </div>
+                        ) : (
+                            <div className="text-sm text-muted-foreground py-4">
+                                You are not assigned to a team yet.
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+            </div>
+
             {/* Stats Grid */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 {/* Current Stage */}
@@ -157,7 +270,7 @@ export default function DashboardPage() {
                                 : 'bg-gray-500'
                                 }`}
                         >
-                            {memberProfile?.track ? TRACK_LABELS[memberProfile.track] : 'No Track'}
+                            {memberProfile?.track ? TRACK_LABELS[memberProfile.track as keyof typeof TRACK_LABELS] || memberProfile.track : 'No Track'}
                         </Badge>
                     </CardContent>
                 </Card>

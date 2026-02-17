@@ -348,7 +348,8 @@ function AddMemberDialog({
                 setAvailableMembers(filtered);
             }
         } catch (error) {
-            console.error('Error fetching members:', error);
+            console.error('Error fetching members:', JSON.stringify(error, null, 2));
+            alert('Failed to fetch members: ' + ((error as any)?.message || 'Unknown error'));
         } finally {
             setLoading(false);
         }

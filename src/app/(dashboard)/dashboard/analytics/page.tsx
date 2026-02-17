@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { supabaseClient } from '@/lib/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -116,6 +117,7 @@ export default function AnalyticsPage() {
       });
     } catch (error) {
       console.error('Error fetching analytics:', error);
+      toast.error('Failed to load analytics data');
     } finally {
       setLoading(false);
     }

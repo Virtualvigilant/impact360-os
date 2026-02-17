@@ -19,33 +19,36 @@ import {
     Star,
     Code2,
     Briefcase,
-    User
+    User,
+    Phone
 } from 'lucide-react';
 import { format } from 'date-fns';
+
+import { ProfileEditDialog } from './profile-edit-dialog';
 
 export default function ProfilePage() {
     const { profile, loading: authLoading } = useAuth();
     const [memberProfile, setMemberProfile] = useState<MemberProfile | null>(null);
     const [loadingMember, setLoadingMember] = useState(false);
 
-    useEffect(() => {
-        const fetchMemberProfile = async () => {
-            if (profile?.role === 'member' && profile.id) {
-                setLoadingMember(true);
-                const supabase = supabaseClient();
-                const { data, error } = await supabase
-                    .from('member_profiles')
-                    .select('*')
-                    .eq('id', profile.id)
-                    .single();
+    const fetchMemberProfile = async () => {
+        if (profile?.role === 'member' && profile.id) {
+            setLoadingMember(true);
+            const supabase = supabaseClient();
+            const { data, error } = await supabase
+                .from('member_profiles')
+                .select('*')
+                .eq('id', profile.id)
+                .single();
 
-                if (data) {
-                    setMemberProfile(data);
-                }
-                setLoadingMember(false);
+            if (data) {
+                setMemberProfile(data);
             }
-        };
+            setLoadingMember(false);
+        }
+    };
 
+    useEffect(() => {
         if (profile) {
             fetchMemberProfile();
         }
@@ -73,15 +76,15 @@ export default function ProfilePage() {
     return (
         <div className="space-y-6 max-w-5xl mx-auto">
             {/* Header Section */}
-            <div className="flex flex-col md:flex-row gap-6 items-start md:items-center bg-slate-900/50 p-6 rounded-xl border border-white/10 backdrop-blur-sm">
-                <Avatar className="h-24 w-24 border-4 border-slate-800">
-                    <AvatarImage src={profile.avatar_url} alt={profile.full_name} />
+            <div className="flex flex-col md:flex-row gap-6 items-start md:items-center bg-card p-6 rounded-3xl border border-border shadow-lg">
+                <Avatar className="h-24 w-24 border-4 border-muted">
+                    <AvatarImage src={profile.avatar_url} alt={profile.full_name} className="object-cover" />
                     <AvatarFallback className="text-2xl">{getInitials(profile.full_name)}</AvatarFallback>
                 </Avatar>
 
                 <div className="flex-1 space-y-2">
                     <div className="flex flex-wrap items-center gap-3">
-                        <h1 className="text-3xl font-bold">{profile.full_name}</h1>
+                        <h1 className="text-3xl font-bold font-heading uppercase">{profile.full_name}</h1>
                         <Badge variant="secondary" className="capitalize px-3 py-1">
                             {profile.role}
                         </Badge>
@@ -90,6 +93,15 @@ export default function ProfilePage() {
                                 {memberProfile.current_stage.replace('_', ' ')}
                             </Badge>
                         )}
+                        <ProfileEditDialog
+                            profile={profile}
+                            memberProfile={memberProfile}
+                            onProfileUpdated={() => {
+                                fetchMemberProfile();
+                                // Refresh location to update auth state/avatar if needed
+                                window.location.reload();
+                            }}
+                        />
                     </div>
 
                     <div className="flex flex-wrap gap-4 text-muted-foreground text-sm">
@@ -107,11 +119,11 @@ export default function ProfilePage() {
                 {memberProfile && (
                     <div className="flex gap-4">
                         {/* Stats for Members */}
-                        <div className="text-center p-3 bg-slate-800/50 rounded-lg border border-white/5">
+                        <div className="text-center p-3 bg-muted/50 rounded-2xl border border-border">
                             <div className="text-2xl font-bold text-primary">{memberProfile.level}</div>
                             <div className="text-xs text-muted-foreground uppercase tracking-wider">Level</div>
                         </div>
-                        <div className="text-center p-3 bg-slate-800/50 rounded-lg border border-white/5">
+                        <div className="text-center p-3 bg-muted/50 rounded-2xl border border-border">
                             <div className="text-2xl font-bold text-blue-400">{memberProfile.experience_points}</div>
                             <div className="text-xs text-muted-foreground uppercase tracking-wider">XP</div>
                         </div>
@@ -233,16 +245,11 @@ export default function ProfilePage() {
                                         <span className="flex-1 truncate">LinkedIn Profile</span>
                                     </a>
                                 )}
-                                {memberProfile.portfolio_url && (
-                                    <a
-                                        href={memberProfile.portfolio_url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="flex items-center gap-3 text-slate-300 hover:text-white transition-colors p-2 hover:bg-white/5 rounded-lg"
-                                    >
-                                        <Globe className="h-5 w-5" />
-                                        <span className="flex-1 truncate">Portfolio</span>
-                                    </a>
+                                {memberProfile.phone_number && (
+                                    <div className="flex items-center gap-3 text-slate-300 p-2 rounded-lg">
+                                        <Phone className="h-5 w-5 text-green-400" />
+                                        <span className="flex-1 truncate">{memberProfile.phone_number}</span>
+                                    </div>
                                 )}
                                 {!memberProfile.github_url && !memberProfile.linkedin_url && !memberProfile.portfolio_url && (
                                     <div className="text-sm text-muted-foreground italic">

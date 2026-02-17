@@ -36,6 +36,7 @@ import {
     Calendar,
     CheckCircle2,
     Users,
+    Phone,
 } from 'lucide-react';
 import { TRACK_LABELS, STAGE_LABELS, STAGE_COLORS } from '@/lib/utils/constants';
 import { formatDate, getInitials } from '@/lib/utils/format';
@@ -54,10 +55,10 @@ export default function MemberDetailPage() {
     const [updatingStage, setUpdatingStage] = useState(false);
 
     useEffect(() => {
-        if (params.id && (isAdmin || isMentor)) {
+        if (params.id) {
             fetchMemberData();
         }
-    }, [params.id, isAdmin, isMentor]);
+    }, [params.id]);
 
     const fetchMemberData = async () => {
         const supabase = supabaseClient();
@@ -142,17 +143,7 @@ export default function MemberDetailPage() {
         }
     };
 
-    if (!isAdmin && !isMentor) {
-        return (
-            <Card>
-                <CardContent className="py-8">
-                    <p className="text-center text-muted-foreground">
-                        You don't have permission to view this page.
-                    </p>
-                </CardContent>
-            </Card>
-        );
-    }
+
 
     if (loading) {
         return (
@@ -224,10 +215,18 @@ export default function MemberDetailPage() {
                                         onEvaluationAdded={fetchMemberData}
                                     />
                                 </div>
-                                <p className="text-muted-foreground flex items-center gap-1">
-                                    <Mail className="h-3.5 w-3.5" />
-                                    {member.profile.email}
-                                </p>
+                                <div className="space-y-1 mt-1">
+                                    <p className="text-muted-foreground flex items-center gap-2">
+                                        <Mail className="h-3.5 w-3.5" />
+                                        {member.profile.email}
+                                    </p>
+                                    {member.phone_number && (
+                                        <p className="text-muted-foreground flex items-center gap-2">
+                                            <Phone className="h-3.5 w-3.5" />
+                                            {member.phone_number}
+                                        </p>
+                                    )}
+                                </div>
                             </div>
 
                             {/* Badges */}
@@ -259,7 +258,7 @@ export default function MemberDetailPage() {
                                     </Badge>
                                 )}
                                 {member.track && (
-                                    <Badge variant="outline">{TRACK_LABELS[member.track]}</Badge>
+                                    <Badge variant="outline">{TRACK_LABELS[member.track as keyof typeof TRACK_LABELS]}</Badge>
                                 )}
                                 {member.is_client_ready && (
                                     <Badge variant="default" className="bg-green-600">

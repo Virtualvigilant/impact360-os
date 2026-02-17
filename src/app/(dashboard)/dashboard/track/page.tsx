@@ -116,7 +116,7 @@ export default function TrackPage() {
             <div>
                 <h1 className="text-3xl font-bold tracking-tight">Learning Track</h1>
                 <p className="text-muted-foreground mt-2">
-                    Your personalized curriculum for {TRACK_LABELS[memberProfile.track]}
+                    Your personalized curriculum for {TRACK_LABELS[memberProfile.track as keyof typeof TRACK_LABELS]}
                 </p>
             </div>
 
@@ -127,7 +127,7 @@ export default function TrackPage() {
                         <div className="flex items-center justify-between">
                             <div>
                                 <CardTitle>Track Progress</CardTitle>
-                                <CardDescription>{TRACK_LABELS[memberProfile.track]}</CardDescription>
+                                <CardDescription>{TRACK_LABELS[memberProfile.track as keyof typeof TRACK_LABELS]}</CardDescription>
                             </div>
                             <Badge className={memberProfile.current_stage ? STAGE_COLORS[memberProfile.current_stage] : ''}>
                                 {memberProfile.current_stage ? STAGE_LABELS[memberProfile.current_stage] : 'Unknown'}

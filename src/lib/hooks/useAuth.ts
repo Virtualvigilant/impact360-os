@@ -41,16 +41,24 @@ export function useAuth() {
 
   const fetchProfile = async (userId: string) => {
     const supabase = supabaseClient();
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
 
-    if (data) {
-      setProfile(data);
+      if (error) {
+        console.error('Error fetching profile:', error.message);
+      }
+      if (data) {
+        setProfile(data);
+      }
+    } catch (err) {
+      console.error('Unexpected error fetching profile:', err);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const signOut = async () => {

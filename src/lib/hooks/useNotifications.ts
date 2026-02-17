@@ -110,7 +110,11 @@ export function useNotifications() {
                     });
                 }
             )
-            .subscribe();
+            .subscribe((status: string) => {
+                if (status === 'CHANNEL_ERROR') {
+                    console.error('Notification subscription error');
+                }
+            });
 
         return () => {
             supabase.removeChannel(channel);

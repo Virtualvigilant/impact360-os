@@ -59,10 +59,10 @@ export default function TeamDetailsPage() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        if ((isAdmin || isMentor) && params.id) {
+        if (params.id) {
             fetchTeamDetails();
         }
-    }, [isAdmin, isMentor, params.id]);
+    }, [params.id]);
 
     const fetchTeamDetails = async () => {
         const supabase = supabaseClient();
@@ -126,13 +126,7 @@ export default function TeamDetailsPage() {
         }
     };
 
-    if (!isAdmin && !isMentor) {
-        return (
-            <div className="flex items-center justify-center h-96">
-                <p className="text-muted-foreground">You don't have permission to view this page.</p>
-            </div>
-        );
-    }
+
 
     if (loading) {
         return (

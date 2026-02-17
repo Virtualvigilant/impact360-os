@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { supabaseClient } from '@/lib/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -23,8 +23,42 @@ export default function SettingsPage() {
     bio: '',
     github_url: '',
     linkedin_url: '',
-    portfolio_url: '',
+    phone_number: '',
   });
+
+  // Fetch member profile data to pre-fill form
+  useEffect(() => {
+    const fetchMemberProfile = async () => {
+      if (profile?.id && profile.role === 'member') {
+        const supabase = supabaseClient();
+        const { data, error } = await supabase
+          .from('member_profiles')
+          .select('*')
+          .eq('id', profile.id)
+          .single();
+
+        if (data && !error) {
+          const memberData = data as any;
+          setFormData(prev => ({
+            ...prev,
+            bio: memberData.bio || '',
+            github_url: memberData.github_url || '',
+            linkedin_url: memberData.linkedin_url || '',
+            phone_number: memberData.phone_number || '',
+          }));
+        }
+      }
+    };
+
+    fetchMemberProfile();
+  }, [profile]);
+
+  // Update formData when profile loads (for full_name)
+  useEffect(() => {
+    if (profile?.full_name) {
+      setFormData(prev => ({ ...prev, full_name: profile.full_name }));
+    }
+  }, [profile?.full_name]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,7 +89,7 @@ export default function SettingsPage() {
             bio: formData.bio,
             github_url: formData.github_url,
             linkedin_url: formData.linkedin_url,
-            portfolio_url: formData.portfolio_url,
+            phone_number: formData.phone_number,
           })
           .eq('id', profile.id);
 
@@ -164,13 +198,12 @@ export default function SettingsPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="portfolio_url">Portfolio URL</Label>
+                  <Label htmlFor="phone_number">Phone Number</Label>
                   <Input
-                    id="portfolio_url"
-                    type="url"
-                    placeholder="https://yourportfolio.com"
-                    value={formData.portfolio_url}
-                    onChange={(e) => setFormData({ ...formData, portfolio_url: e.target.value })}
+                    id="phone_number"
+                    placeholder="+1 (555) 000-0000"
+                    value={formData.phone_number}
+                    onChange={(e) => setFormData({ ...formData, phone_number: e.target.value })}
                   />
                 </div>
               </>

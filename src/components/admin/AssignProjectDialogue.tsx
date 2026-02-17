@@ -242,7 +242,7 @@ export function AssignProjectDialog({
                                                         </Badge>
                                                         {member.track && (
                                                             <Badge variant="secondary" className="text-xs">
-                                                                {TRACK_LABELS[member.track]}
+                                                                {TRACK_LABELS[member.track as keyof typeof TRACK_LABELS]}
                                                             </Badge>
                                                         )}
                                                     </div>

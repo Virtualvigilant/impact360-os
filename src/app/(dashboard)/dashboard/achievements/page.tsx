@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { supabaseClient } from '@/lib/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -126,6 +127,7 @@ export default function AchievementsPage() {
             setStats(calculatedStats);
         } catch (error) {
             console.error('Error fetching stats:', error);
+            toast.error('Failed to load achievement data');
         } finally {
             setLoading(false);
         }

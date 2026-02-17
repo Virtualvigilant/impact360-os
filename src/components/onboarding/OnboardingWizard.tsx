@@ -96,9 +96,16 @@ export function OnboardingWizard({ memberId, memberName, onComplete }: Onboardin
     };
 
     const toggleSkill = (skill: string) => {
-        setSelectedSkills((prev) =>
-            prev.includes(skill) ? prev.filter((s) => s !== skill) : [...prev, skill]
-        );
+        if (skill === 'None') {
+            setSelectedSkills((prev) => prev.includes('None') ? [] : ['None']);
+        } else {
+            setSelectedSkills((prev) => {
+                const withoutNone = prev.filter((s) => s !== 'None');
+                return withoutNone.includes(skill)
+                    ? withoutNone.filter((s) => s !== skill)
+                    : [...withoutNone, skill];
+            });
+        }
     };
 
     const toggleInterest = (interest: string) => {
@@ -119,7 +126,7 @@ export function OnboardingWizard({ memberId, memberName, onComplete }: Onboardin
                 .update({
                     track: selectedTrack,
                     experience_level: experienceLevel,
-                    skills: selectedSkills,
+                    skills: selectedSkills.includes('None') ? [] : selectedSkills,
                     interests: selectedInterests,
                     current_stage: 'training',
                 })
@@ -306,7 +313,7 @@ export function OnboardingWizard({ memberId, memberName, onComplete }: Onboardin
                                 </p>
                             </div>
                             <div className="flex flex-wrap gap-2">
-                                {SKILL_OPTIONS[selectedTrack].map((skill) => {
+                                {['None', ...SKILL_OPTIONS[selectedTrack]].map((skill) => {
                                     const isSelected = selectedSkills.includes(skill);
                                     return (
                                         <Badge

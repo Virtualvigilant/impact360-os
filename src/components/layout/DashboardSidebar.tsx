@@ -15,6 +15,7 @@ import {
     Briefcase,
     BookOpen,
     FileText,
+    ClipboardList,
 } from 'lucide-react';
 import { useAuth } from '@/lib/hooks/useAuth';
 
@@ -48,6 +49,12 @@ const navItems: NavItem[] = [
         title: 'Achievements',
         href: '/dashboard/achievements',
         icon: Trophy,
+        roles: ['member'],
+    },
+    {
+        title: 'My Tasks',
+        href: '/dashboard/my-tasks',
+        icon: ClipboardList,
         roles: ['member'],
     },
     {

@@ -20,64 +20,90 @@ import {
     UserPlus,
     Info,
     Loader2,
+    Trash2,
+    X,
 } from 'lucide-react';
 
 const notificationIcons: Record<string, React.ComponentType<{ className?: string }>> = {
     project_assignment: FolderKanban,
     evaluation: Award,
     stage_change: UserPlus,
+    task_review: Award,
 };
 
 function NotificationItem({
     notification,
     onRead,
+    onDelete,
 }: {
     notification: Notification;
     onRead: (id: string) => void;
+    onDelete: (id: string) => void;
 }) {
     const Icon = notificationIcons[notification.type] || Info;
 
     return (
-        <button
-            onClick={() => !notification.is_read && onRead(notification.id)}
-            className={`w-full text-left px-4 py-3 hover:bg-muted/50 transition-colors flex items-start gap-3 ${!notification.is_read ? 'bg-primary/5' : ''
+        <div
+            className={`group relative flex items-start gap-3 px-4 py-3 hover:bg-muted/50 transition-colors ${!notification.is_read ? 'bg-primary/5' : ''
                 }`}
         >
-            <div
-                className={`mt-0.5 p-1.5 rounded-full shrink-0 ${!notification.is_read
-                        ? 'bg-primary/10 text-primary'
-                        : 'bg-muted text-muted-foreground'
-                    }`}
+            <button
+                onClick={() => !notification.is_read && onRead(notification.id)}
+                className="flex items-start gap-3 flex-1 text-left min-w-0"
             >
-                <Icon className="h-3.5 w-3.5" />
-            </div>
-            <div className="flex-1 min-w-0">
-                <div className="flex items-start justify-between gap-2">
-                    <p
-                        className={`text-sm leading-tight ${!notification.is_read ? 'font-semibold' : 'font-medium'
-                            }`}
-                    >
-                        {notification.title}
-                    </p>
-                    {!notification.is_read && (
-                        <span className="h-2 w-2 rounded-full bg-primary shrink-0 mt-1.5" />
-                    )}
+                <div
+                    className={`mt-0.5 p-1.5 rounded-full shrink-0 ${!notification.is_read
+                            ? 'bg-primary/10 text-primary'
+                            : 'bg-muted text-muted-foreground'
+                        }`}
+                >
+                    <Icon className="h-3.5 w-3.5" />
                 </div>
-                <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
-                    {notification.message}
-                </p>
-                <p className="text-xs text-muted-foreground/70 mt-1">
-                    {formatRelativeTime(notification.created_at)}
-                </p>
-            </div>
-        </button>
+                <div className="flex-1 min-w-0 pr-5">
+                    <div className="flex items-start justify-between gap-2">
+                        <p className={`text-sm leading-tight ${!notification.is_read ? 'font-semibold' : 'font-medium'}`}>
+                            {notification.title}
+                        </p>
+                        {!notification.is_read && (
+                            <span className="h-2 w-2 rounded-full bg-primary shrink-0 mt-1.5" />
+                        )}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                        {notification.message}
+                    </p>
+                    <p className="text-xs text-muted-foreground/70 mt-1">
+                        {formatRelativeTime(notification.created_at)}
+                    </p>
+                </div>
+            </button>
+
+            {/* Per-item delete button */}
+            <button
+                onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete(notification.id);
+                }}
+                title="Dismiss"
+                className="absolute right-3 top-3 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-muted text-muted-foreground hover:text-destructive"
+            >
+                <X className="h-3.5 w-3.5" />
+            </button>
+        </div>
     );
 }
 
 export function NotificationDropdown() {
-    const { notifications, unreadCount, loading, markAsRead, markAllAsRead } =
+    const { notifications, unreadCount, loading, markAsRead, markAllAsRead, deleteNotification, clearAllNotifications } =
         useNotifications();
     const [open, setOpen] = useState(false);
+    const [clearing, setClearing] = useState(false);
+
+    const handleClearAll = async (e: React.MouseEvent) => {
+        e.preventDefault();
+        setClearing(true);
+        await clearAllNotifications();
+        setClearing(false);
+    };
 
     return (
         <DropdownMenu open={open} onOpenChange={setOpen}>
@@ -96,21 +122,45 @@ export function NotificationDropdown() {
                 <div className="flex items-center justify-between px-4 py-3">
                     <DropdownMenuLabel className="p-0 text-base">
                         Notifications
+                        {notifications.length > 0 && (
+                            <span className="ml-1.5 text-xs font-normal text-muted-foreground">
+                                ({notifications.length})
+                            </span>
+                        )}
                     </DropdownMenuLabel>
-                    {unreadCount > 0 && (
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-auto py-1 px-2 text-xs text-muted-foreground hover:text-foreground"
-                            onClick={(e) => {
-                                e.preventDefault();
-                                markAllAsRead();
-                            }}
-                        >
-                            <CheckCheck className="h-3 w-3 mr-1" />
-                            Mark all read
-                        </Button>
-                    )}
+                    <div className="flex items-center gap-1">
+                        {unreadCount > 0 && (
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-auto py-1 px-2 text-xs text-muted-foreground hover:text-foreground"
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    markAllAsRead();
+                                }}
+                            >
+                                <CheckCheck className="h-3 w-3 mr-1" />
+                                Mark all read
+                            </Button>
+                        )}
+                        {notifications.length > 0 && (
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-auto py-1 px-2 text-xs text-muted-foreground hover:text-destructive"
+                                onClick={handleClearAll}
+                                disabled={clearing}
+                                title="Clear all notifications"
+                            >
+                                {clearing ? (
+                                    <Loader2 className="h-3 w-3 animate-spin" />
+                                ) : (
+                                    <Trash2 className="h-3 w-3" />
+                                )}
+                                <span className="ml-1">Clear all</span>
+                            </Button>
+                        )}
+                    </div>
                 </div>
                 <DropdownMenuSeparator className="m-0" />
 
@@ -124,7 +174,7 @@ export function NotificationDropdown() {
                         <div className="py-8 text-center">
                             <Bell className="h-8 w-8 text-muted-foreground/40 mx-auto mb-2" />
                             <p className="text-sm text-muted-foreground">
-                                No notifications yet
+                                All caught up!
                             </p>
                         </div>
                     ) : (
@@ -134,6 +184,7 @@ export function NotificationDropdown() {
                                     key={notification.id}
                                     notification={notification}
                                     onRead={markAsRead}
+                                    onDelete={deleteNotification}
                                 />
                             ))}
                         </div>

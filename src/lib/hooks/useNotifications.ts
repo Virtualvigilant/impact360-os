@@ -79,6 +79,39 @@ export function useNotifications() {
         }
     }, [user?.id]);
 
+    // Delete a single notification
+    const deleteNotification = useCallback(async (notificationId: string) => {
+        const supabase = supabaseClient();
+        try {
+            const { error } = await (supabase
+                .from('notifications') as any)
+                .delete()
+                .eq('id', notificationId);
+
+            if (error) throw error;
+            setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
+        } catch (error) {
+            console.error('Error deleting notification:', error);
+        }
+    }, []);
+
+    // Clear all notifications for the current user
+    const clearAllNotifications = useCallback(async () => {
+        if (!user?.id) return;
+        const supabase = supabaseClient();
+        try {
+            const { error } = await (supabase
+                .from('notifications') as any)
+                .delete()
+                .eq('user_id', user.id);
+
+            if (error) throw error;
+            setNotifications([]);
+        } catch (error) {
+            console.error('Error clearing notifications:', error);
+        }
+    }, [user?.id]);
+
     // Fetch on mount
     useEffect(() => {
         if (user?.id) {
@@ -127,6 +160,8 @@ export function useNotifications() {
         loading,
         markAsRead,
         markAllAsRead,
+        deleteNotification,
+        clearAllNotifications,
         refetch: fetchNotifications,
     };
 }

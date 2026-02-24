@@ -4,6 +4,7 @@ export type TrackType = 'web_development' | 'ai_ml' | 'design' | 'mobile' | 'dev
 export type ProjectStatus = 'not_started' | 'in_progress' | 'submitted' | 'under_review' | 'completed' | 'rejected';
 export type ProjectDifficulty = 'beginner' | 'intermediate' | 'advanced';
 export type ExperienceLevel = 'beginner' | 'intermediate' | 'advanced';
+export type TaskStatus = 'not_started' | 'in_progress' | 'submitted' | 'completed' | 'rejected';
 
 export interface Profile {
     id: string;
@@ -111,6 +112,36 @@ export interface Submission {
     notes?: string;
     submitted_at: string;
     project?: Project;
+}
+
+export interface TeamTask {
+    id: string;
+    team_id: string;
+    title: string;
+    description?: string;
+    assigned_to: string;
+    status: TaskStatus;
+    due_date?: string;
+    created_by?: string;
+    created_at: string;
+    admin_review?: string;
+    reviewed_at?: string;
+    // Relations (joined)
+    team?: Team;
+    assignee?: Profile;
+}
+
+export interface TeamTaskSubmission {
+    id: string;
+    task_id: string;
+    member_id: string;
+    github_url?: string;
+    demo_url?: string;
+    notes?: string;
+    submitted_at: string;
+    // Relations (joined)
+    task?: TeamTask;
+    member?: Profile;
 }
 
 export interface Evaluation {
@@ -254,6 +285,16 @@ export interface Database {
                 Row: Submission
                 Insert: Submission
                 Update: Partial<Submission>
+            }
+            team_tasks: {
+                Row: TeamTask
+                Insert: Omit<TeamTask, 'id' | 'created_at' | 'team' | 'assignee'>
+                Update: Partial<TeamTask>
+            }
+            team_task_submissions: {
+                Row: TeamTaskSubmission
+                Insert: Omit<TeamTaskSubmission, 'id' | 'submitted_at' | 'task' | 'member'>
+                Update: Partial<TeamTaskSubmission>
             }
             evaluations: {
                 Row: Evaluation

@@ -90,11 +90,7 @@ export function TeamDialog({ initialData, onSuccess, open, onOpenChange }: TeamD
                 // Create Team
                 const { data: newTeam, error: insertError } = await (supabase
                     .from('teams') as any)
-                    .insert({
-                        name,
-                        created_by: profile?.id,
-                        is_active: true,
-                    })
+                    .insert({ name })
                     .select()
                     .single();
                 if (insertError) throw insertError;

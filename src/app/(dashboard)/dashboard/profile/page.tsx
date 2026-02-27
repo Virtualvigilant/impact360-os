@@ -55,6 +55,9 @@ export default function ProfilePage() {
     }, [profile]);
 
     const isLoading = authLoading || loadingMember;
+    const selectedLearningSkills = (memberProfile?.interests && memberProfile.interests.length > 0)
+        ? memberProfile.interests
+        : (memberProfile?.skills || []);
 
     if (isLoading) {
         return (
@@ -157,16 +160,16 @@ export default function ProfilePage() {
                             <CardHeader>
                                 <CardTitle className="text-lg flex items-center gap-2">
                                     <Code2 className="h-5 w-5 text-purple-400" />
-                                    Skills & Interests
+                                    Learning Skills
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-6">
-                                {memberProfile.skills && memberProfile.skills.length > 0 && (
+                                {selectedLearningSkills.length > 0 && (
                                     <div className="space-y-3">
-                                        <h4 className="text-sm font-medium text-slate-400 uppercase tracking-wider">Skills</h4>
+                                        <h4 className="text-sm font-medium text-slate-400 uppercase tracking-wider">Skills You Want to Learn</h4>
                                         <div className="flex flex-wrap gap-2">
-                                            {memberProfile.skills.map(skill => (
-                                                <Badge key={skill} variant="secondary" className="bg-slate-800 hover:bg-slate-700">
+                                            {selectedLearningSkills.map((skill) => (
+                                                <Badge key={skill} variant="outline" className="border-slate-700 text-slate-300">
                                                     {skill}
                                                 </Badge>
                                             ))}
@@ -174,17 +177,10 @@ export default function ProfilePage() {
                                     </div>
                                 )}
 
-                                {memberProfile.interests && memberProfile.interests.length > 0 && (
-                                    <div className="space-y-3">
-                                        <h4 className="text-sm font-medium text-slate-400 uppercase tracking-wider">Interests</h4>
-                                        <div className="flex flex-wrap gap-2">
-                                            {memberProfile.interests.map(interest => (
-                                                <Badge key={interest} variant="outline" className="border-slate-700 text-slate-300">
-                                                    {interest}
-                                                </Badge>
-                                            ))}
-                                        </div>
-                                    </div>
+                                {selectedLearningSkills.length === 0 && (
+                                    <p className="text-sm text-muted-foreground">
+                                        No learning skills selected yet. Click Edit Profile to choose skills you want to learn.
+                                    </p>
                                 )}
                             </CardContent>
                         </Card>

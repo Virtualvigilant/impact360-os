@@ -17,7 +17,53 @@ import {
   Layout
 } from 'lucide-react';
 
-export default function Home() {
+type WikipediaSummaryResponse = {
+  title?: string;
+  extract?: string;
+  content_urls?: {
+    desktop?: {
+      page?: string;
+    };
+  };
+};
+
+const AI_SUMMARY_ENDPOINT = 'https://en.wikipedia.org/api/rest_v1/page/summary/Artificial_intelligence';
+const AI_SUMMARY_FALLBACK_URL = 'https://en.wikipedia.org/wiki/Artificial_intelligence';
+
+async function getAiSummary() {
+  try {
+    const response = await fetch(AI_SUMMARY_ENDPOINT, {
+      next: { revalidate: 21600 },
+      headers: {
+        Accept: 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Wikipedia API request failed: ${response.status}`);
+    }
+
+    const data: WikipediaSummaryResponse = await response.json();
+
+    return {
+      title: data.title || 'Artificial intelligence',
+      extract: data.extract || 'Artificial intelligence is the simulation of human intelligence by computer systems, including learning, reasoning, and problem-solving.',
+      url: data.content_urls?.desktop?.page || AI_SUMMARY_FALLBACK_URL,
+    };
+  } catch (error) {
+    console.error('Failed to fetch AI summary:', error);
+
+    return {
+      title: 'Artificial intelligence',
+      extract: 'Artificial intelligence is the simulation of human intelligence by computer systems, including learning, reasoning, and problem-solving.',
+      url: AI_SUMMARY_FALLBACK_URL,
+    };
+  }
+}
+
+export default async function Home() {
+  const aiSummary = await getAiSummary();
+
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground selection:bg-primary/30">
       {/* Ambient Background Effects */}
@@ -294,6 +340,21 @@ export default function Home() {
                   </div>
                 </Link>
               ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="py-20 px-6 bg-secondary">
+          <div className="max-w-4xl mx-auto">
+            <div className="rounded-3xl border border-border bg-card p-8 md:p-10 space-y-4">
+              <Badge variant="outline" className="w-fit">AI Insight • Trusted Source</Badge>
+              <h2 className="text-3xl md:text-4xl font-bold font-heading uppercase">{aiSummary.title}</h2>
+              <p className="text-muted-foreground text-lg leading-relaxed font-sans">{aiSummary.extract}</p>
+              <Link href={aiSummary.url} target="_blank" rel="noreferrer">
+                <Button variant="outline" className="mt-2">
+                  Read full article <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </Link>
             </div>
           </div>
         </section>

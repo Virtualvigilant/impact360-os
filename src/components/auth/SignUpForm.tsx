@@ -7,6 +7,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { TrackType } from '@/types/database.types';
+import { TRACK_LABELS } from '@/lib/utils/constants';
 
 export function SignUpForm() {
     const router = useRouter();
@@ -16,7 +19,8 @@ export function SignUpForm() {
         email: '',
         password: '',
         fullName: '',
-        confirmPassword: ''
+        confirmPassword: '',
+        preferredTrack: 'ai_ml' as TrackType,
     });
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -47,6 +51,7 @@ export function SignUpForm() {
                 options: {
                     data: {
                         full_name: formData.fullName,
+                        preferred_track: formData.preferredTrack,
                     },
                 },
             });
@@ -54,8 +59,20 @@ export function SignUpForm() {
             if (authError) throw authError;
 
             if (authData.user) {
-                // Profile and member_profile are created automatically
-                // by the database trigger (handle_new_user)
+                const { error: profileUpdateError } = await (supabase
+                    .from('member_profiles') as any)
+                    .upsert(
+                        {
+                            id: authData.user.id,
+                            track: formData.preferredTrack,
+                        },
+                        { onConflict: 'id' }
+                    );
+
+                if (profileUpdateError) {
+                    throw profileUpdateError;
+                }
+
                 router.push('/dashboard');
             }
         } catch (err: any) {
@@ -95,6 +112,25 @@ export function SignUpForm() {
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     required
                 />
+            </div>
+
+            <div className="space-y-2">
+                <Label htmlFor="preferredTrack">Skill You Want to Learn</Label>
+                <Select
+                    value={formData.preferredTrack}
+                    onValueChange={(value) => setFormData({ ...formData, preferredTrack: value as TrackType })}
+                >
+                    <SelectTrigger id="preferredTrack">
+                        <SelectValue placeholder="Select a track" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {(Object.keys(TRACK_LABELS) as TrackType[]).map((track) => (
+                            <SelectItem key={track} value={track}>
+                                {TRACK_LABELS[track]}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
             </div>
 
             <div className="space-y-2">

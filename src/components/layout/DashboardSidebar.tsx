@@ -5,9 +5,9 @@ import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import {
     LayoutDashboard,
+    LibraryBig,
     FolderKanban,
     Users,
-    GraduationCap,
     Trophy,
     Settings,
     BarChart3,
@@ -34,15 +34,15 @@ const navItems: NavItem[] = [
         roles: ['member', 'mentor', 'admin'],
     },
     {
-        title: 'My Projects',
-        href: '/dashboard/projects',
-        icon: FolderKanban,
+        title: 'Learning Dashboard',
+        href: '/dashboard/learning',
+        icon: LibraryBig,
         roles: ['member'],
     },
     {
-        title: 'Learning Track',
-        href: '/dashboard/track',
-        icon: GraduationCap,
+        title: 'My Projects',
+        href: '/dashboard/projects',
+        icon: FolderKanban,
         roles: ['member'],
     },
     {

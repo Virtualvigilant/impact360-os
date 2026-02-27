@@ -1,15 +1,17 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { supabaseClient } from '@/lib/supabase/client';
-import { Profile, MemberProfile, Database } from '@/types/database.types';
+import { Profile, MemberProfile, Database, TrackType } from '@/types/database.types';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { getInitials } from '@/lib/utils/format';
+import { SKILL_OPTIONS, TRACK_LABELS } from '@/lib/utils/constants';
 import { toast } from 'sonner';
 import { Loader2, Upload, Pencil } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -28,9 +30,32 @@ export function ProfileEditDialog({ profile, memberProfile, onProfileUpdated }: 
     const [githubUrl, setGithubUrl] = useState(memberProfile?.github_url || '');
     const [linkedinUrl, setLinkedinUrl] = useState(memberProfile?.linkedin_url || '');
     const [phoneNumber, setPhoneNumber] = useState(memberProfile?.phone_number || '');
+    const [selectedTrack, setSelectedTrack] = useState<TrackType>(memberProfile?.track || 'ai_ml');
+    const [learningSkills, setLearningSkills] = useState<string[]>(memberProfile?.interests || []);
     const [avatarFile, setAvatarFile] = useState<File | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string | null>(profile.avatar_url || null);
     const router = useRouter();
+
+    useEffect(() => {
+        if (!open) return;
+
+        setFullName(profile.full_name || '');
+        setBio(memberProfile?.bio || '');
+        setGithubUrl(memberProfile?.github_url || '');
+        setLinkedinUrl(memberProfile?.linkedin_url || '');
+        setPhoneNumber(memberProfile?.phone_number || '');
+        setSelectedTrack(memberProfile?.track || 'ai_ml');
+        setLearningSkills(memberProfile?.interests || []);
+        setPreviewUrl(profile.avatar_url || null);
+    }, [open, profile, memberProfile]);
+
+    const toggleLearningSkill = (skill: string) => {
+        setLearningSkills((prev) =>
+            prev.includes(skill)
+                ? prev.filter((item) => item !== skill)
+                : [...prev, skill]
+        );
+    };
 
     const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -79,22 +104,39 @@ export function ProfileEditDialog({ profile, memberProfile, onProfileUpdated }: 
 
             if (profileError) throw profileError;
 
-            // Update Member Profile (Bio, Links)
-            if (memberProfile) {
-                const memberUpdates: Database['public']['Tables']['member_profiles']['Update'] = {
-                    bio,
-                    github_url: githubUrl,
-                    linkedin_url: linkedinUrl,
-                    phone_number: phoneNumber,
-                    updated_at: new Date().toISOString(),
-                };
+            const memberUpdates: Database['public']['Tables']['member_profiles']['Update'] = {
+                bio,
+                github_url: githubUrl,
+                linkedin_url: linkedinUrl,
+                phone_number: phoneNumber,
+                track: selectedTrack,
+                interests: learningSkills,
+                skills: learningSkills,
+                updated_at: new Date().toISOString(),
+            };
 
-                const { error: memberError } = await supabase
+            const { data: updatedMemberRow, error: memberUpdateError } = await supabase
+                .from('member_profiles')
+                .update(memberUpdates)
+                .eq('id', profile.id)
+                .select('id')
+                .maybeSingle();
+
+            if (memberUpdateError) throw memberUpdateError;
+
+            if (!updatedMemberRow) {
+                const { error: memberInsertError } = await supabase
                     .from('member_profiles')
-                    .update(memberUpdates)
-                    .eq('id', profile.id);
+                    .insert({
+                        id: profile.id,
+                        current_stage: 'intake',
+                        level: 1,
+                        experience_points: 0,
+                        is_client_ready: false,
+                        ...memberUpdates,
+                    });
 
-                if (memberError) throw memberError;
+                if (memberInsertError) throw memberInsertError;
             }
 
             toast.success('Profile updated successfully');
@@ -118,7 +160,7 @@ export function ProfileEditDialog({ profile, memberProfile, onProfileUpdated }: 
                     Edit Profile
                 </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px] bg-card border-border">
+            <DialogContent className="sm:max-w-[560px] max-h-[90vh] overflow-hidden bg-card border-border flex flex-col">
                 <DialogHeader>
                     <DialogTitle>Edit Profile</DialogTitle>
                     <DialogDescription>
@@ -126,7 +168,7 @@ export function ProfileEditDialog({ profile, memberProfile, onProfileUpdated }: 
                     </DialogDescription>
                 </DialogHeader>
 
-                <div className="grid gap-6 py-4">
+                <div className="grid gap-6 py-4 overflow-y-auto pr-1">
                     {/* Avatar Upload */}
                     <div className="flex flex-col items-center gap-4">
                         <Avatar className="h-24 w-24 border-4 border-muted cursor-pointer relative group">
@@ -169,6 +211,44 @@ export function ProfileEditDialog({ profile, memberProfile, onProfileUpdated }: 
                     </div>
 
                     <div className="grid gap-2">
+                        <Label htmlFor="learning-track">Learning Track</Label>
+                        <Select value={selectedTrack} onValueChange={(value) => setSelectedTrack(value as TrackType)}>
+                            <SelectTrigger id="learning-track">
+                                <SelectValue placeholder="Select learning track" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {(Object.keys(TRACK_LABELS) as TrackType[]).map((track) => (
+                                    <SelectItem key={track} value={track}>
+                                        {TRACK_LABELS[track]}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    <div className="grid gap-2">
+                        <Label>Skills You Want to Learn</Label>
+                        <div className="flex flex-wrap gap-2 rounded-md border border-input p-3">
+                            {SKILL_OPTIONS[selectedTrack].map((skill) => {
+                                const isSelected = learningSkills.includes(skill);
+
+                                return (
+                                    <Button
+                                        key={skill}
+                                        type="button"
+                                        size="sm"
+                                        variant={isSelected ? 'default' : 'outline'}
+                                        onClick={() => toggleLearningSkill(skill)}
+                                        className="h-7"
+                                    >
+                                        {skill}
+                                    </Button>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    <div className="grid gap-2">
                         <Label>Social Links</Label>
                         <div className="grid gap-2">
                             <Input
@@ -194,7 +274,7 @@ export function ProfileEditDialog({ profile, memberProfile, onProfileUpdated }: 
                     </div>
                 </div>
 
-                <DialogFooter>
+                <DialogFooter className="pt-2 border-t border-border">
                     <Button variant="outline" onClick={() => setOpen(false)} disabled={isLoading}>
                         Cancel
                     </Button>

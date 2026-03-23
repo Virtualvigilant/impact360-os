@@ -7,52 +7,27 @@ import { ArrowLeft, ExternalLink } from 'lucide-react';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { TrackType } from '@/types/database.types';
 
-type LessonConfig = {
+interface LearningVideo {
+    id: string;
     title: string;
-    query: string;
-};
+    description: string;
+    url: string;
+    channelTitle: string;
+    publishedAt: string;
+}
 
-type LearningFeedResponse = {
-    videos: Array<{
-        id: string;
-        title: string;
-        description: string;
-        url: string;
-        channelTitle: string;
-        publishedAt: string;
-    }>;
-    warnings?: string[];
-};
+interface LearningFeedResult {
+    videos: LearningVideo[];
+    warnings: string[];
+}
 
-const LESSONS: Record<string, LessonConfig> = {
-    'intro-ai': {
-        title: 'Intro to AI',
-        query: 'Artificial intelligence',
-    },
-    'machine-learning-basics': {
-        title: 'Machine Learning Basics',
-        query: 'Machine learning',
-    },
-};
-
-const REQUIRED_LESSON_IDS_BY_TRACK: Record<TrackType, string[]> = {
-    ai_ml: ['intro-ai', 'machine-learning-basics'],
-    web_development: ['web-fundamentals', 'react-nextjs'],
-    design: ['ui-ux-foundations', 'figma-prototyping'],
-    mobile: ['mobile-fundamentals', 'react-native-flutter'],
-    devops: ['devops-foundations', 'docker-cicd'],
-};
-
-async function getLearningFeed(query: string) {
+async function getLearningFeed(query: string): Promise<LearningFeedResult> {
     const warnings: string[] = [];
     const apiKey = process.env.YOUTUBE_API_KEY;
 
     if (!apiKey) {
         warnings.push('YOUTUBE_API_KEY is not set, so videos are unavailable.');
-        return {
-            videos: [],
-            warnings,
-        } as LearningFeedResponse;
+        return { videos: [], warnings };
     }
 
     const youtubeUrl = new URL('https://www.googleapis.com/youtube/v3/search');
@@ -67,7 +42,7 @@ async function getLearningFeed(query: string) {
         headers: { Accept: 'application/json' },
     });
 
-    let videos: LearningFeedResponse['videos'] = [];
+    let videos: LearningVideo[] = [];
 
     if (youtubeResponse && youtubeResponse.ok) {
         const youtubeData: { items?: Array<{ id?: { videoId?: string }; snippet?: { title?: string; description?: string; channelTitle?: string; publishedAt?: string } }> } = await youtubeResponse.json();
@@ -85,10 +60,7 @@ async function getLearningFeed(query: string) {
         warnings.push('Unable to load related videos right now.');
     }
 
-    return {
-        videos,
-        warnings,
-    } as LearningFeedResponse;
+    return { videos, warnings };
 }
 
 export default async function LessonPage({
@@ -100,14 +72,16 @@ export default async function LessonPage({
 }) {
     const { lessonId } = await params;
     const resolvedSearchParams = await searchParams;
-    const lesson = LESSONS[lessonId];
 
-    const topic = resolvedSearchParams.topic || lesson?.query;
-    const lessonTitle = resolvedSearchParams.title || lesson?.title || 'Learning Lesson';
+    const topic = resolvedSearchParams.topic;
+    const lessonTitle = resolvedSearchParams.title || 'Learning Lesson';
 
     if (!topic) {
         notFound();
     }
+
+    let customVideos: LearningVideo[] = [];
+    let requiredIds: string[] = [];
 
     try {
         const supabase = await createServerSupabaseClient();
@@ -125,8 +99,38 @@ export default async function LessonPage({
             const currentIds: string[] = memberProfile?.completed_module_ids || [];
             const updatedIds = Array.from(new Set([...currentIds, lessonId]));
             const selectedTrack: TrackType = memberProfile?.track || 'ai_ml';
-            const requiredLessonIds = REQUIRED_LESSON_IDS_BY_TRACK[selectedTrack] || REQUIRED_LESSON_IDS_BY_TRACK.ai_ml;
-            const allLessonsCompleted = requiredLessonIds.every((id) => updatedIds.includes(id));
+
+            // Fetch module IDs and resources from Supabase for this track
+            const { data: trackModules } = await (supabase
+                .from('curriculum_modules') as any)
+                .select('id, resources')
+                .eq('track', selectedTrack);
+
+            if (trackModules) {
+                requiredIds = trackModules.map((m: { id: string }) => m.id);
+                
+                // Find the specific module to get its custom resources
+                const currentModule = trackModules.find((m: { id: string, resources: string[] }) => m.id === lessonId);
+                if (currentModule && currentModule.resources) {
+                    const ytLinks = currentModule.resources.filter((r: string) => r.includes('youtube.com') || r.includes('youtu.be'));
+                    customVideos = ytLinks.map((url: string, index: number) => {
+                        // Very basic extraction for the override display
+                        const videoIdMatch = url.match(/(?:v=|youtu\.be\/)([^&]+)/);
+                        const videoId = videoIdMatch ? videoIdMatch[1] : `custom-${index}`;
+                        
+                        return {
+                            id: videoId,
+                            title: 'Curriculum Video (Required)',
+                            description: 'Admin assigned video for this module.',
+                            url: url,
+                            channelTitle: 'Impact360 OS',
+                            publishedAt: new Date().toISOString()
+                        };
+                    });
+                }
+            }
+
+            const allLessonsCompleted = requiredIds.length > 0 && requiredIds.every((id: string) => updatedIds.includes(id));
 
             await (supabase.from('member_profiles') as any)
                 .update({
@@ -141,7 +145,10 @@ export default async function LessonPage({
         console.error('Failed to auto-update lesson completion:', error);
     }
 
-    const feed = await getLearningFeed(topic);
+    const { videos: autoVideos, warnings } = await getLearningFeed(topic);
+    
+    // Combine custom overrides with the auto feed
+    const displayVideos = [...customVideos, ...autoVideos].slice(0, 8); // Show up to 8 max
 
     return (
         <div className="space-y-6">
@@ -158,16 +165,21 @@ export default async function LessonPage({
             <Card>
                 <CardHeader>
                     <CardTitle>{lessonTitle} - Video Lessons</CardTitle>
-                    <CardDescription>Video list only</CardDescription>
+                    <CardDescription>
+                        {customVideos.length > 0 ? "Curriculum required videos and related material" : "Auto-populated related videos"}
+                    </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                    {feed.videos.length === 0 ? (
+                    {displayVideos.length === 0 ? (
                         <p className="text-sm text-muted-foreground">No related videos available right now.</p>
                     ) : (
-                        feed.videos.map((video) => (
-                            <div key={video.id} className="rounded-lg border p-3">
-                                <p className="font-medium text-sm">{video.title}</p>
-                                <p className="text-xs text-muted-foreground mt-1">{video.channelTitle}</p>
+                        displayVideos.map((video, index) => (
+                            <div key={`${video.id}-${index}`} className={`rounded-lg border p-3 ${index < customVideos.length ? 'border-primary/50 bg-primary/5' : ''}`}>
+                                <div className="flex items-center justify-between mb-1">
+                                    <p className="font-medium text-sm">{video.title}</p>
+                                    {index < customVideos.length && <Badge variant="secondary" className="text-[10px] h-5">Required</Badge>}
+                                </div>
+                                <p className="text-xs text-muted-foreground">{video.channelTitle}</p>
                                 <Button variant="link" className="px-0 h-auto mt-2" asChild>
                                     <Link href={video.url} target="_blank" rel="noreferrer">
                                         Watch lesson <ExternalLink className="ml-1 h-3 w-3" />
@@ -179,10 +191,10 @@ export default async function LessonPage({
                 </CardContent>
             </Card>
 
-            {(feed.warnings || []).length > 0 && (
+            {warnings.length > 0 && (
                 <div className="flex flex-wrap gap-2">
-                    {feed.warnings?.map((warning) => (
-                        <Badge key={warning} variant="outline">{warning}</Badge>
+                    {warnings.map((warning, i) => (
+                        <Badge key={i} variant="outline">{warning}</Badge>
                     ))}
                 </div>
             )}

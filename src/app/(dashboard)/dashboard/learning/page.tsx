@@ -155,20 +155,22 @@ export default function LearningDashboardPage() {
     const selectedTrack: TrackType = memberProfile?.track || 'ai_ml';
 
     const learningSteps: LearningStep[] = useMemo(() => {
-        const baseSteps = TRACK_LEARNING_STEPS[selectedTrack] || DEFAULT_LEARNING_STEPS;
+        // Use Supabase modules as the primary source for the selected track
+        const trackModules = modules.filter((m) => m.track === selectedTrack);
 
-        return baseSteps.map((step, index) => {
-            const module = modules[index];
-            if (!module) return step;
+        if (trackModules.length > 0) {
+            return trackModules.map((mod) => ({
+                id: mod.id,
+                title: mod.title,
+                query: mod.title,
+                description: mod.topics?.length
+                    ? mod.topics.slice(0, 3).join(', ')
+                    : mod.duration || 'No description available.',
+            }));
+        }
 
-            return {
-                ...step,
-                title: module.title || step.title,
-                description: module.topics?.length
-                    ? module.topics.slice(0, 3).join(', ')
-                    : step.description,
-            };
-        });
+        // Fallback to hardcoded steps only when no modules exist in DB
+        return TRACK_LEARNING_STEPS[selectedTrack] || DEFAULT_LEARNING_STEPS;
     }, [modules, selectedTrack]);
 
     const feedQuery = useMemo(() => learningSteps[0]?.query || 'machine learning', [learningSteps]);

@@ -10,6 +10,7 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-sans);
   --font-heading: var(--font-heading);
+  --font-mono: var(--font-mono-ui);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -49,18 +50,15 @@
 }
 
 :root {
-  --radius: 1.5rem;
-  /* rounded-3xl approx */
+  --radius: 0.625rem;
 
   /* Light Mode */
-  --background: #FFFEF9;
-  /* Off-white page background */
-  --foreground: #000000;
-  /* Primary body text (will opacity in base layer) */
+  --background: #FAFAF9;
+  --foreground: #111318;
 
   --card: #FFFFFF;
   /* Pure white cards */
-  --card-foreground: #000000;
+  --card-foreground: #111318;
 
   --popover: #FFFFFF;
   --popover-foreground: #000000;
@@ -83,9 +81,8 @@
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(0.577 0.245 27.325);
 
-  --border: #306CEC33;
-  /* 20% opacity approx (33 in hex is ~20%) -> actually 33 is 51. 20% is 33. Wait. 255 * 0.2 = 51 -> 0x33. Correct. */
-  --input: #306CEC33;
+  --border: #E2E4E9;
+  --input: #D8DBE2;
   --ring: #306CEC;
 
   --chart-1: #306CEC;
@@ -100,23 +97,20 @@
   --sidebar-primary-foreground: #FFFFFF;
   --sidebar-accent: #F5F6F8;
   --sidebar-accent-foreground: #000000;
-  --sidebar-border: #306CEC33;
+  --sidebar-border: #E2E4E9;
   --sidebar-ring: #306CEC;
 }
 
 .dark {
   /* Dark Mode */
-  --background: #000000;
-  /*--background: #111827;*/
-  /* Very dark page background */
-  --foreground: #FFFFFF;
+  --background: #0B0D10;
+  --foreground: #F5F7FA;
 
-  --card: #1A1F3A;
-  /* Dark panel/card base */
-  --card-foreground: #FFFFFF;
+  --card: #111418;
+  --card-foreground: #F5F7FA;
 
-  --popover: #1A1F3A;
-  --popover-foreground: #FFFFFF;
+  --popover: #111418;
+  --popover-foreground: #F5F7FA;
 
   --primary: #306CEC;
   /* Brand Blue - Accent remains constant */
@@ -135,18 +129,17 @@
   --destructive: oklch(0.396 0.141 25.723);
   --destructive-foreground: #FFFFFF;
 
-  --border: #306CEC33;
-  /* 20% opacity blue */
-  --input: #306CEC33;
+  --border: #252A31;
+  --input: #2D333B;
   --ring: #306CEC;
 
-  --sidebar: #1A1F3A;
+  --sidebar: #0E1115;
   --sidebar-foreground: #FFFFFF;
   --sidebar-primary: #306CEC;
   --sidebar-primary-foreground: #FFFFFF;
   --sidebar-accent: #111827;
   --sidebar-accent-foreground: #FFFFFF;
-  --sidebar-border: #306CEC33;
+  --sidebar-border: #252A31;
   --sidebar-ring: #306CEC;
 }
 
@@ -159,12 +152,102 @@
     @apply bg-background text-foreground font-sans;
   }
 
-  h1,
-  h2,
-  h3,
-  h4,
-  h5,
-  h6 {
-    @apply font-heading uppercase tracking-wide font-bold;
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading font-semibold;
   }
+}
+
+/* ------------------------------------------------------------------------- */
+/* Records & Rules                                                            */
+/*                                                                            */
+/* The public surface is built from hairline rules rather than cards and       */
+/* shadows, on the theory that this product is a register of accountable       */
+/* decisions and should look like one. Rules are plain `border-border`          */
+/* hairlines; these two classes carry the typographic half of the language.     */
+/* ------------------------------------------------------------------------- */
+@layer components {
+  /* Micro-label: the small uppercase monospace type that names a block. */
+  .label-micro {
+    font-family: var(--font-mono-ui), ui-monospace, monospace;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  /* Record identifier: PLC-0412, APP-8842, TASK-1F2A. */
+  .ident {
+    font-family: var(--font-mono-ui), ui-monospace, monospace;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* ------------------------------------------------------------------------- */
+/* Records form                                                               */
+/*                                                                            */
+/* Deliberately UNLAYERED. Tailwind utilities live in a later cascade layer    */
+/* than @layer components, so `rounded-md` and `border` on the shadcn inputs   */
+/* would otherwise win and the fields would stay boxed. Unlayered rules        */
+/* outrank every layer, which is what makes the underline styling actually     */
+/* apply.                                                                      */
+/*                                                                            */
+/* Scoped to the public application form. Fields are ruled underlines rather   */
+/* than boxes, which matches the rest of the surface and reads like completing  */
+/* a form rather than filling in a web app. Scoped by class so the dashboard's  */
+/* shadcn inputs are untouched.                                                */
+/* ------------------------------------------------------------------------- */
+.form-records input:not([type="checkbox"]),
+.form-records textarea,
+.form-records select {
+  border-radius: 0;
+  border-width: 0 0 1px 0;
+  background-color: transparent;
+  padding-left: 0;
+  padding-right: 0;
+  box-shadow: none;
+}
+
+.form-records textarea {
+  padding-top: 0.25rem;
+}
+
+.form-records input:not([type="checkbox"]):focus-visible,
+.form-records textarea:focus-visible,
+.form-records select:focus-visible {
+  border-color: var(--primary);
+  box-shadow: 0 1px 0 0 var(--primary);
+  outline: none;
+}
+
+.form-records label {
+  font-family: var(--font-mono-ui), ui-monospace, monospace;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+
+/* The checkbox row keeps sentence case: it is a statement being agreed to. */
+.form-records label:has(input[type="checkbox"]) {
+  font-family: var(--font-sans), sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--foreground);
+}
+
+.form-records button[type="submit"] {
+  border-radius: 0;
+  padding: 0.95rem 1.5rem;
+  height: auto;
+  font-family: var(--font-mono-ui), ui-monospace, monospace;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
 }

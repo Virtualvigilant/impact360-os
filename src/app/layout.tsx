@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { League_Spartan, DM_Sans } from "next/font/google";
+import { League_Spartan, DM_Sans, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 
 const leagueSpartan = League_Spartan({
@@ -12,9 +12,23 @@ const dmSans = DM_Sans({
   variable: "--font-sans",
 });
 
+// Identifiers, micro-labels and figures. A record system needs a monospace that is
+// institutional rather than playful, and Plex Mono's figures line up with DM Sans's
+// x-height closely enough to sit inside a sentence without looking pasted in.
+const plexMono = IBM_Plex_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  variable: "--font-mono-ui",
+});
+
+
 export const metadata: Metadata = {
-  title: "Impact360 OS - Talent Development Platform",
-  description: "Transform raw talent into client-ready professionals",
+  title: "Impact 360 · Internship OS",
+  description: "Impact 360 operating system for developing, managing and converting technology talent.",
+  icons: {
+    icon: "/logo.png",
+    apple: "/logo.png",
+  },
 };
 
 import { ThemeProvider } from "@/components/theme-provider"
@@ -27,17 +41,16 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${leagueSpartan.variable} ${dmSans.variable} font-sans antialiased`}>
+      <body className={`${leagueSpartan.variable} ${dmSans.variable} ${plexMono.variable} font-sans antialiased`}>
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"
           enableSystem
           disableTransitionOnChange
         >
-          {/* Global Ambient Effects */}
+          {/* Subtle programme workspace backdrop */}
           <div className="fixed inset-0 z-[-1] pointer-events-none overflow-hidden">
-            <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-cyan-500/10 blur-[120px]" />
-            <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-indigo-500/10 blur-[120px]" />
+            <div className="absolute inset-x-0 top-0 h-80 bg-gradient-to-b from-primary/5 to-transparent" />
           </div>
           {children}
           <Toaster />

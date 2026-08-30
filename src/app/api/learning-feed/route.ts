@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { rateLimited, requireApiSession } from '@/lib/api/guard';
 
 interface DevToArticle {
     id: number;
@@ -35,6 +36,13 @@ function mapQueryToTag(query: string) {
 }
 
 export async function GET(request: NextRequest) {
+    // This route spends ITEK's third-party API quota, so it is for signed-in
+    // people only and is capped per person.
+    const { session, response } = await requireApiSession();
+    if (response) return response;
+    const limited = rateLimited(session.userId, 'learning-feed', 20);
+    if (limited) return limited;
+
     const query = request.nextUrl.searchParams.get('query') || 'machine learning';
     const tag = mapQueryToTag(query);
     const warnings: string[] = [];

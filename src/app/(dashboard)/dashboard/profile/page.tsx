@@ -1,262 +1,65 @@
-'use client';
-
-import { useEffect, useState } from 'react';
-import { useAuth } from '@/lib/hooks/useAuth';
-import { supabaseClient } from '@/lib/supabase/client';
-import { MemberProfile } from '@/types/database.types';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { UserRound } from 'lucide-react';
+import { requireSession } from '@/lib/auth/session';
+import { ROLE_LABELS } from '@/lib/auth/roles';
+import { updateOwnProfile } from '@/lib/actions/governance';
+import { formatDate } from '@/lib/utils/format';
+import { PageHeader } from '@/components/primitives/page-header';
+import { ProfileForm } from '@/components/governance/profile-form';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
-import { getInitials } from '@/lib/utils/format';
-import {
-    Github,
-    Linkedin,
-    Globe,
-    MapPin,
-    Calendar,
-    Trophy,
-    Star,
-    Code2,
-    Briefcase,
-    User,
-    Phone
-} from 'lucide-react';
-import { format } from 'date-fns';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
-import { ProfileEditDialog } from './profile-edit-dialog';
+export const metadata = { title: 'Your profile · ITEK Internship OS' };
 
-export default function ProfilePage() {
-    const { profile, loading: authLoading } = useAuth();
-    const [memberProfile, setMemberProfile] = useState<MemberProfile | null>(null);
-    const [loadingMember, setLoadingMember] = useState(false);
-
-    const fetchMemberProfile = async () => {
-        if (profile?.role === 'member' && profile.id) {
-            setLoadingMember(true);
-            const supabase = supabaseClient();
-            const { data, error } = await supabase
-                .from('member_profiles')
-                .select('*')
-                .eq('id', profile.id)
-                .single();
-
-            if (data) {
-                setMemberProfile(data);
-            }
-            setLoadingMember(false);
-        }
-    };
-
-    useEffect(() => {
-        if (profile) {
-            fetchMemberProfile();
-        }
-    }, [profile]);
-
-    const isLoading = authLoading || loadingMember;
-    const selectedLearningSkills = (memberProfile?.interests && memberProfile.interests.length > 0)
-        ? memberProfile.interests
-        : (memberProfile?.skills || []);
-
-    if (isLoading) {
-        return (
-            <div className="space-y-6">
-                <div className="flex items-center space-x-4">
-                    <Skeleton className="h-24 w-24 rounded-full" />
-                    <div className="space-y-2">
-                        <Skeleton className="h-8 w-48" />
-                        <Skeleton className="h-4 w-32" />
-                    </div>
-                </div>
-                <Skeleton className="h-[200px] w-full" />
-            </div>
-        );
-    }
-
-    if (!profile) return null;
+export default async function ProfilePage() {
+    const session = await requireSession('/dashboard/profile');
+    const { profile } = session;
 
     return (
-        <div className="space-y-6 max-w-5xl mx-auto">
-            {/* Header Section */}
-            <div className="flex flex-col md:flex-row gap-6 items-start md:items-center bg-card p-6 rounded-3xl border border-border shadow-lg">
-                <Avatar className="h-24 w-24 border-4 border-muted">
-                    <AvatarImage src={profile.avatar_url} alt={profile.full_name} className="object-cover" />
-                    <AvatarFallback className="text-2xl">{getInitials(profile.full_name)}</AvatarFallback>
-                </Avatar>
+        <div className="mx-auto max-w-3xl space-y-7">
+            <PageHeader
+                eyebrow="Account"
+                title="Your profile"
+                description="Identity and contact information used across your ITEK professional record."
+                icon={UserRound}
+            />
 
-                <div className="flex-1 space-y-2">
-                    <div className="flex flex-wrap items-center gap-3">
-                        <h1 className="text-3xl font-bold font-heading uppercase">{profile.full_name}</h1>
-                        <Badge variant="secondary" className="capitalize px-3 py-1">
-                            {profile.role}
-                        </Badge>
-                        {memberProfile?.current_stage && (
-                            <Badge variant="outline" className="capitalize border-primary/50 text-primary">
-                                {memberProfile.current_stage.replace('_', ' ')}
-                            </Badge>
-                        )}
-                        <ProfileEditDialog
-                            profile={profile}
-                            memberProfile={memberProfile}
-                            onProfileUpdated={() => {
-                                fetchMemberProfile();
-                                // Refresh location to update auth state/avatar if needed
-                                window.location.reload();
-                            }}
-                        />
+            <Card>
+                <CardHeader>
+                    <div className="flex flex-wrap items-start justify-between gap-4">
+                        <div>
+                            <CardTitle>Personal information</CardTitle>
+                            <CardDescription>
+                                Your role and placement are set by ITEK, not here — every role change is recorded against
+                                the administrator who made it.
+                            </CardDescription>
+                        </div>
+                        <Badge variant="secondary">{ROLE_LABELS[session.role]}</Badge>
                     </div>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                    <ProfileForm
+                        action={updateOwnProfile}
+                        defaults={{
+                            full_name: profile.full_name,
+                            phone: profile.phone ?? '',
+                            timezone: profile.timezone,
+                            locale: profile.locale,
+                            avatar_url: profile.avatar_url ?? '',
+                        }}
+                    />
 
-                    <div className="flex flex-wrap gap-4 text-muted-foreground text-sm">
-                        <div className="flex items-center gap-1">
-                            <User className="h-4 w-4" />
-                            <span>{profile.email}</span>
+                    <dl className="grid gap-4 rounded-lg bg-muted/60 p-4 text-sm sm:grid-cols-2">
+                        <div>
+                            <dt className="text-xs text-muted-foreground">Email</dt>
+                            <dd className="mt-1 font-medium">{profile.email}</dd>
                         </div>
-                        <div className="flex items-center gap-1">
-                            <Calendar className="h-4 w-4" />
-                            <span>Joined {format(new Date(profile.created_at), 'MMMM yyyy')}</span>
+                        <div>
+                            <dt className="text-xs text-muted-foreground">Account created</dt>
+                            <dd className="mt-1 font-medium">{formatDate(profile.created_at)}</dd>
                         </div>
-                    </div>
-                </div>
-
-                {memberProfile && (
-                    <div className="flex gap-4">
-                        {/* Stats for Members */}
-                        <div className="text-center p-3 bg-muted/50 rounded-2xl border border-border">
-                            <div className="text-2xl font-bold text-primary">{memberProfile.level}</div>
-                            <div className="text-xs text-muted-foreground uppercase tracking-wider">Level</div>
-                        </div>
-                        <div className="text-center p-3 bg-muted/50 rounded-2xl border border-border">
-                            <div className="text-2xl font-bold text-blue-400">{memberProfile.experience_points}</div>
-                            <div className="text-xs text-muted-foreground uppercase tracking-wider">XP</div>
-                        </div>
-                    </div>
-                )}
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Main Content */}
-                <div className="md:col-span-2 space-y-6">
-                    {/* Bio & About */}
-                    {memberProfile?.bio && (
-                        <Card className="bg-slate-900/30 border-white/10">
-                            <CardHeader>
-                                <CardTitle className="text-lg flex items-center gap-2">
-                                    <User className="h-5 w-5 text-primary" />
-                                    About
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <p className="text-slate-300 leading-relaxed">
-                                    {memberProfile.bio}
-                                </p>
-                            </CardContent>
-                        </Card>
-                    )}
-
-                    {/* Skills & Interests */}
-                    {memberProfile && (
-                        <Card className="bg-slate-900/30 border-white/10">
-                            <CardHeader>
-                                <CardTitle className="text-lg flex items-center gap-2">
-                                    <Code2 className="h-5 w-5 text-purple-400" />
-                                    Learning Skills
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-6">
-                                {selectedLearningSkills.length > 0 && (
-                                    <div className="space-y-3">
-                                        <h4 className="text-sm font-medium text-slate-400 uppercase tracking-wider">Skills You Want to Learn</h4>
-                                        <div className="flex flex-wrap gap-2">
-                                            {selectedLearningSkills.map((skill) => (
-                                                <Badge key={skill} variant="outline" className="border-slate-700 text-slate-300">
-                                                    {skill}
-                                                </Badge>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {selectedLearningSkills.length === 0 && (
-                                    <p className="text-sm text-muted-foreground">
-                                        No learning skills selected yet. Click Edit Profile to choose skills you want to learn.
-                                    </p>
-                                )}
-                            </CardContent>
-                        </Card>
-                    )}
-                </div>
-
-                {/* Sidebar */}
-                <div className="space-y-6">
-                    {/* Track Info */}
-                    {memberProfile?.track && (
-                        <Card className="bg-linear-to-br from-indigo-900/20 to-slate-900/50 border-indigo-500/20">
-                            <CardHeader>
-                                <CardTitle className="text-lg flex items-center gap-2">
-                                    <Briefcase className="h-5 w-5 text-indigo-400" />
-                                    Learning Track
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="text-xl font-bold capitalize text-white mb-1">
-                                    {memberProfile.track.replace('_', ' ')}
-                                </div>
-                                <div className="text-sm text-slate-400">
-                                    Current Focus
-                                </div>
-                            </CardContent>
-                        </Card>
-                    )}
-
-                    {/* Connect / Links */}
-                    {memberProfile && (
-                        <Card className="bg-slate-900/30 border-white/10">
-                            <CardHeader>
-                                <CardTitle className="text-lg flex items-center gap-2">
-                                    <Globe className="h-5 w-5 text-cyan-400" />
-                                    Connect
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                {memberProfile.github_url && (
-                                    <a
-                                        href={memberProfile.github_url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="flex items-center gap-3 text-slate-300 hover:text-white transition-colors p-2 hover:bg-white/5 rounded-lg"
-                                    >
-                                        <Github className="h-5 w-5" />
-                                        <span className="flex-1 truncate">GitHub Profile</span>
-                                    </a>
-                                )}
-                                {memberProfile.linkedin_url && (
-                                    <a
-                                        href={memberProfile.linkedin_url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="flex items-center gap-3 text-slate-300 hover:text-white transition-colors p-2 hover:bg-white/5 rounded-lg"
-                                    >
-                                        <Linkedin className="h-5 w-5" />
-                                        <span className="flex-1 truncate">LinkedIn Profile</span>
-                                    </a>
-                                )}
-                                {memberProfile.phone_number && (
-                                    <div className="flex items-center gap-3 text-slate-300 p-2 rounded-lg">
-                                        <Phone className="h-5 w-5 text-green-400" />
-                                        <span className="flex-1 truncate">{memberProfile.phone_number}</span>
-                                    </div>
-                                )}
-                                {!memberProfile.github_url && !memberProfile.linkedin_url && !memberProfile.portfolio_url && (
-                                    <div className="text-sm text-muted-foreground italic">
-                                        No social links added yet.
-                                    </div>
-                                )}
-                            </CardContent>
-                        </Card>
-                    )}
-                </div>
-            </div>
+                    </dl>
+                </CardContent>
+            </Card>
         </div>
     );
 }

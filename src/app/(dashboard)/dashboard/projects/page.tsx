@@ -1,259 +1,101 @@
-'use client';
-
-import { useEffect, useState } from 'react';
-import { useAuth } from '@/lib/hooks/useAuth';
-import { supabaseClient } from '@/lib/supabase/client';
-import { ProjectAssignment, Submission } from '@/types/database.types';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, ExternalLink, Calendar, Clock } from 'lucide-react';
-import { formatDate } from '@/lib/utils/format';
-import { DIFFICULTY_COLORS, DIFFICULTY_LABELS } from '@/lib/utils/constants';
 import Link from 'next/link';
+import { FolderKanban } from 'lucide-react';
+import { can, ROLE_GROUPS } from '@/lib/auth/roles';
+import { requireRole } from '@/lib/auth/session';
+import { listProjects } from '@/lib/data/work';
+import { formatDate } from '@/lib/utils/format';
+import { PageHeader } from '@/components/primitives/page-header';
+import { FilterBar } from '@/components/primitives/filter-bar';
+import { Pagination } from '@/components/primitives/pagination';
+import { StatusBadge } from '@/components/primitives/status-badge';
+import { EmptyState, Section } from '@/components/primitives/states';
+import { CreateProjectDialog } from '@/components/work/create-project-dialog';
+import { Card, CardContent } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
 
-export default function ProjectsPage() {
-    const { profile } = useAuth();
-    const [assignments, setAssignments] = useState<ProjectAssignment[]>([]);
-    const [loading, setLoading] = useState(true);
+export const metadata = { title: 'Projects · ITEK Internship OS' };
 
-    useEffect(() => {
-        if (profile?.id) {
-            fetchAssignments();
-        }
-    }, [profile?.id]);
+const STATUSES = ['planned', 'active', 'on_hold', 'completed', 'cancelled'] as const;
 
-    const fetchAssignments = async () => {
-        if (!profile?.id) return;
+export default async function ProjectsPage({
+    searchParams,
+}: {
+    searchParams: Promise<{ q?: string; status?: string; page?: string }>;
+}) {
+    const session = await requireRole([...ROLE_GROUPS.staff, ...ROLE_GROUPS.participants], '/dashboard/projects');
+    const params = await searchParams;
 
-        const supabase = supabaseClient();
-
-        try {
-            const { data, error } = await supabase
-                .from('project_assignments')
-                .select(`
-          *,
-          project:projects(*)
-        `)
-                .eq('member_id', profile.id)
-                .order('assigned_at', { ascending: false });
-
-            if (error) throw error;
-            if (data) setAssignments(data);
-        } catch (error) {
-            console.error('Error fetching assignments:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center h-96">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-        );
-    }
-
-    const notStarted = assignments.filter(a => a.status === 'not_started');
-    const inProgress = assignments.filter(a => a.status === 'in_progress');
-    const submitted = assignments.filter(a => a.status === 'submitted' || a.status === 'under_review');
-    const completed = assignments.filter(a => a.status === 'completed');
+    const { data, error, schemaMissing } = await listProjects({
+        search: params.q,
+        status: STATUSES.includes(params.status as never) ? (params.status as (typeof STATUSES)[number]) : undefined,
+        page: Number(params.page) || 1,
+    });
 
     return (
-        <div className="space-y-8">
-            <div>
-                <h1 className="text-3xl font-bold tracking-tight">My Projects</h1>
-                <p className="text-muted-foreground mt-2">
-                    Track your assigned projects and submit your work
-                </p>
-            </div>
+        <div className="mx-auto max-w-6xl space-y-7">
+            <PageHeader
+                eyebrow="Workspace"
+                title="Project workspaces"
+                description="Objectives, teams, milestones and delivery health. Interns contribute to real work here, and the record of that contribution is what a certificate later refers to."
+                icon={FolderKanban}
+                actions={can(session.role, 'project:manage') ? <CreateProjectDialog /> : undefined}
+            />
 
-            <Tabs defaultValue="in-progress" className="space-y-4">
-                <TabsList>
-                    <TabsTrigger value="in-progress">
-                        In Progress ({inProgress.length})
-                    </TabsTrigger>
-                    <TabsTrigger value="not-started">
-                        Not Started ({notStarted.length})
-                    </TabsTrigger>
-                    <TabsTrigger value="submitted">
-                        Submitted ({submitted.length})
-                    </TabsTrigger>
-                    <TabsTrigger value="completed">
-                        Completed ({completed.length})
-                    </TabsTrigger>
-                </TabsList>
+            <FilterBar
+                searchPlaceholder="Search projects…"
+                filters={[{ param: 'status', label: 'Status', options: STATUSES }]}
+            />
 
-                <TabsContent value="in-progress" className="space-y-4">
-                    {inProgress.length === 0 ? (
-                        <Card>
-                            <CardContent className="py-8">
-                                <p className="text-center text-muted-foreground">
-                                    No projects in progress
-                                </p>
-                            </CardContent>
-                        </Card>
-                    ) : (
-                        inProgress.map((assignment) => (
-                            <ProjectCard key={assignment.id} assignment={assignment} onUpdate={fetchAssignments} />
-                        ))
-                    )}
-                </TabsContent>
+            <Section error={error} schemaMissing={schemaMissing}>
+                {data.rows.length === 0 ? (
+                    <EmptyState
+                        icon={FolderKanban}
+                        title="No projects yet"
+                        description="A project gives tasks their context. Create one so work can be assigned against something meaningful."
+                    />
+                ) : (
+                    <>
+                        <div className="grid gap-4 md:grid-cols-2">
+                            {data.rows.map((project) => (
+                                <Card key={project.id} className="transition-colors hover:border-primary/40">
+                                    <CardContent className="p-5">
+                                        <Link href={`/dashboard/projects/${project.id}`} className="block">
+                                            <div className="flex items-start justify-between gap-3">
+                                                <div className="min-w-0">
+                                                    <p className="truncate text-sm font-semibold">{project.name}</p>
+                                                    <p className="mt-1 truncate text-xs text-muted-foreground">
+                                                        {project.code} · {project.programme?.name ?? 'Independent'} ·{' '}
+                                                        {project.lead?.full_name ?? 'Lead pending'}
+                                                    </p>
+                                                </div>
+                                                <StatusBadge status={project.status} />
+                                            </div>
 
-                <TabsContent value="not-started" className="space-y-4">
-                    {notStarted.length === 0 ? (
-                        <Card>
-                            <CardContent className="py-8">
-                                <p className="text-center text-muted-foreground">
-                                    No projects waiting to start
-                                </p>
-                            </CardContent>
-                        </Card>
-                    ) : (
-                        notStarted.map((assignment) => (
-                            <ProjectCard key={assignment.id} assignment={assignment} onUpdate={fetchAssignments} />
-                        ))
-                    )}
-                </TabsContent>
+                                            <p className="mt-3 line-clamp-2 text-sm leading-6 text-muted-foreground">
+                                                {project.objective}
+                                            </p>
 
-                <TabsContent value="submitted" className="space-y-4">
-                    {submitted.length === 0 ? (
-                        <Card>
-                            <CardContent className="py-8">
-                                <p className="text-center text-muted-foreground">
-                                    No submitted projects
-                                </p>
-                            </CardContent>
-                        </Card>
-                    ) : (
-                        submitted.map((assignment) => (
-                            <ProjectCard key={assignment.id} assignment={assignment} onUpdate={fetchAssignments} />
-                        ))
-                    )}
-                </TabsContent>
+                                            <div className="mt-4 flex items-center gap-3">
+                                                <Progress value={project.progress} className="h-1.5 flex-1" />
+                                                <span className="w-10 shrink-0 text-right text-xs tabular-nums text-muted-foreground">
+                                                    {project.progress}%
+                                                </span>
+                                            </div>
 
-                <TabsContent value="completed" className="space-y-4">
-                    {completed.length === 0 ? (
-                        <Card>
-                            <CardContent className="py-8">
-                                <p className="text-center text-muted-foreground">
-                                    No completed projects yet
-                                </p>
-                            </CardContent>
-                        </Card>
-                    ) : (
-                        completed.map((assignment) => (
-                            <ProjectCard key={assignment.id} assignment={assignment} onUpdate={fetchAssignments} />
-                        ))
-                    )}
-                </TabsContent>
-            </Tabs>
+                                            {project.target_end_date && (
+                                                <p className="mt-2 text-xs text-muted-foreground">
+                                                    Target {formatDate(project.target_end_date)}
+                                                </p>
+                                            )}
+                                        </Link>
+                                    </CardContent>
+                                </Card>
+                            ))}
+                        </div>
+                        <Pagination page={data} label="projects" />
+                    </>
+                )}
+            </Section>
         </div>
-    );
-}
-
-interface ProjectCardProps {
-    assignment: ProjectAssignment;
-    onUpdate: () => void;
-}
-
-function ProjectCard({ assignment, onUpdate }: ProjectCardProps) {
-    return (
-        <Card>
-            <CardHeader>
-                <div className="flex items-start justify-between">
-                    <div className="space-y-1">
-                        <CardTitle>{assignment.project?.title}</CardTitle>
-                        <CardDescription>{assignment.project?.description}</CardDescription>
-                    </div>
-                    <Badge
-                        className={
-                            assignment.project?.difficulty
-                                ? DIFFICULTY_COLORS[assignment.project.difficulty]
-                                : ''
-                        }
-                    >
-                        {assignment.project?.difficulty
-                            ? DIFFICULTY_LABELS[assignment.project.difficulty]
-                            : 'Unknown'}
-                    </Badge>
-                </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-                {/* Project Details */}
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                        <Calendar className="h-4 w-4" />
-                        <span>Assigned: {formatDate(assignment.assigned_at)}</span>
-                    </div>
-                    {assignment.project?.deadline && (
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                            <Clock className="h-4 w-4" />
-                            <span>Deadline: {formatDate(assignment.project.deadline)}</span>
-                        </div>
-                    )}
-                </div>
-
-                {/* Tech Stack */}
-                {assignment.project?.tech_stack && assignment.project.tech_stack.length > 0 && (
-                    <div>
-                        <p className="text-sm font-medium mb-2">Tech Stack:</p>
-                        <div className="flex flex-wrap gap-2">
-                            {assignment.project.tech_stack.map((tech, idx) => (
-                                <Badge key={idx} variant="outline">
-                                    {tech}
-                                </Badge>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
-                {/* Deliverables */}
-                {assignment.project?.deliverables && assignment.project.deliverables.length > 0 && (
-                    <div>
-                        <p className="text-sm font-medium mb-2">Deliverables:</p>
-                        <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
-                            {assignment.project.deliverables.map((item, idx) => (
-                                <li key={idx}>{item}</li>
-                            ))}
-                        </ul>
-                    </div>
-                )}
-
-                {/* Actions */}
-                <div className="flex gap-2 pt-4">
-                    {assignment.status === 'not_started' && (
-                        <Button asChild>
-                            <Link href={`/dashboard/projects/${assignment.id}`}>
-                                Start Project
-                            </Link>
-                        </Button>
-                    )}
-                    {assignment.status === 'in_progress' && (
-                        <Button asChild>
-                            <Link href={`/dashboard/projects/${assignment.id}`}>
-                                Continue Working
-                            </Link>
-                        </Button>
-                    )}
-                    {(assignment.status === 'submitted' || assignment.status === 'under_review') && (
-                        <Button variant="outline" size="sm" asChild>
-                            <Link href={`/dashboard/projects/${assignment.id}`}>
-                                View Submissions
-                            </Link>
-                        </Button>
-                    )}
-                    {assignment.status === 'completed' && (
-                        <Button variant="outline" asChild>
-                            <Link href={`/dashboard/projects/${assignment.id}`}>
-                                View Details
-                            </Link>
-                        </Button>
-                    )}
-                </div>
-            </CardContent>
-        </Card>
     );
 }

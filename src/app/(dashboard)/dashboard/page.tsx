@@ -1,397 +1,64 @@
-'use client';
+import { Suspense } from 'react';
+import { LayoutDashboard } from 'lucide-react';
+import { requireSession } from '@/lib/auth/session';
+import { loadCommandCenter } from '@/lib/data/command-center';
+import { ROLE_LABELS } from '@/lib/auth/roles';
+import { PageHeader } from '@/components/primitives/page-header';
+import { CardsSkeleton, Section } from '@/components/primitives/states';
+import { AccessDeniedNotice } from '@/components/dashboard/access-denied-notice';
+import { InternCommandCenter } from '@/components/dashboard/intern-command-center';
+import { SupervisionCommandCenter } from '@/components/dashboard/supervision-command-center';
+import { TalentCommandCenter } from '@/components/dashboard/talent-command-center';
+import { LeadershipCommandCenter } from '@/components/dashboard/leadership-command-center';
+import { AlumniCommandCenter } from '@/components/dashboard/alumni-command-center';
 
-import { useEffect, useState } from 'react';
-import { OnboardingWizard } from '@/components/onboarding/OnboardingWizard';
-import { useAuth } from '@/lib/hooks/useAuth';
-import { useProjects } from '@/lib/hooks/useProjects';
-import { supabaseClient } from '@/lib/supabase/client';
-import { MemberProfile, Evaluation } from '@/types/database.types';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
-import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
-import { STAGE_LABELS, TRACK_LABELS, STAGE_COLORS } from '@/lib/utils/constants';
-import { TrendingUp, Target, Award, FolderKanban, Users } from 'lucide-react';
-import { toast } from 'sonner';
-import Link from 'next/link';
-import { formatDate } from '@/lib/utils/format';
+export const metadata = { title: 'Command center · ITEK Internship OS' };
 
-import { Button } from '@/components/ui/button';
-
-interface ExtendedMemberProfile extends MemberProfile {
-    cohort?: {
-        id: string;
-        name: string;
-        description: string;
-        track: string;
-        is_active: boolean;
-    };
-    team_members?: {
-        role: string;
-        team: {
-            id: string;
-            name: string;
-            created_at: string;
-        };
-    }[];
-}
-
-export default function DashboardPage() {
-    const { profile, loading: authLoading } = useAuth();
-    const { assignments, loading: projectsLoading } = useProjects(profile?.id);
-    const [memberProfile, setMemberProfile] = useState<ExtendedMemberProfile | null>(null);
-    const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
-    const [profileLoading, setProfileLoading] = useState(true);
-    const [showOnboarding, setShowOnboarding] = useState(false);
-
-    const fetchProfileAndEvaluations = async () => {
-        if (!profile?.id) return;
-        setProfileLoading(true);
-        const supabase = supabaseClient();
-
-        try {
-            // Fetch member profile with cohort (FK exists: member_profiles.cohort_id -> cohorts.id)
-            const { data: memberData, error: memberError } = await (supabase
-                .from('member_profiles') as any)
-                .select(`
-                    *,
-                    cohort:cohorts(id, name, description, track, is_active)
-                `)
-                .eq('id', profile.id)
-                .single();
-
-            if (memberError) console.error('Dashboard memberError:', JSON.stringify(memberError, null, 2));
-
-            // Fetch team membership separately (no FK from member_profiles to team_members)
-            const { data: teamData, error: teamError } = await (supabase
-                .from('team_members') as any)
-                .select(`
-                    role,
-                    team:teams(id, name, created_at)
-                `)
-                .eq('user_id', profile.id);
-
-            if (teamError) console.error('Dashboard teamError:', JSON.stringify(teamError, null, 2));
-
-            // Combine into a single object
-            if (memberData) {
-                const combined = {
-                    ...memberData,
-                    team_members: teamData || []
-                };
-                setMemberProfile(combined as any);
-            }
-
-            // Fetch evaluations
-            const { data: evaluationsData } = await (supabase
-                .from('evaluations') as any)
-                .select('*')
-                .eq('member_id', profile.id)
-                .order('evaluated_at', { ascending: false });
-
-            if (evaluationsData) setEvaluations(evaluationsData);
-        } catch (error) {
-            console.error('Error fetching dashboard data:', JSON.stringify(error, null, 2));
-            toast.error('Failed to load dashboard data: ' + ((error as any)?.message || 'Unknown error'));
-        } finally {
-            setProfileLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        if (!authLoading && profile?.id) {
-            fetchProfileAndEvaluations();
-        } else if (!authLoading) {
-            setProfileLoading(false);
-        }
-    }, [profile?.id, authLoading]);
-
-    useEffect(() => {
-        if (memberProfile && memberProfile.current_stage === 'intake') {
-            setShowOnboarding(true);
-        }
-    }, [memberProfile]);
-
-    const isLoading = authLoading || profileLoading || projectsLoading;
-
-    // Loading State
-    if (isLoading) {
-        return (
-            <div className="space-y-8">
-                <div>
-                    <Skeleton className="h-10 w-64 mb-2" />
-                    <Skeleton className="h-5 w-96" />
-                </div>
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                    {[...Array(4)].map((_, i) => (
-                        <Card key={i}>
-                            <CardHeader className="pb-2">
-                                <Skeleton className="h-4 w-24" />
-                            </CardHeader>
-                            <CardContent>
-                                <Skeleton className="h-8 w-16 mb-2" />
-                                <Skeleton className="h-4 w-full" />
-                            </CardContent>
-                        </Card>
-                    ))}
-                </div>
-                <Card>
-                    <CardHeader>
-                        <Skeleton className="h-6 w-32 mb-2" />
-                        <Skeleton className="h-4 w-48" />
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        {[...Array(3)].map((_, i) => (
-                            <Skeleton key={i} className="h-20 w-full" />
-                        ))}
-                    </CardContent>
-                </Card>
-            </div>
-        );
-    }
-
-    // Show onboarding wizard if user is in intake stage
-    if (showOnboarding && profile?.id) {
-        return (
-            <OnboardingWizard
-                memberId={profile.id}
-                memberName={profile.full_name || 'there'}
-                onComplete={() => {
-                    setShowOnboarding(false);
-                    fetchProfileAndEvaluations();
-                }}
-            />
-        );
-    }
-
-    // Calculate stats
-    const completedProjects = assignments.filter(a => a.status === 'completed').length;
-    const averageScore = evaluations.length > 0
-        ? evaluations.reduce((sum, e) => sum + e.average_score, 0) / evaluations.length
-        : 0;
+/**
+ * The command center renders one of five dashboards.
+ *
+ * A single component that branched on role internally could not describe what any one
+ * role actually sees; each of these takes a typed payload it fully consumes.
+ */
+async function CommandCenterContent({ denied }: { denied: boolean }) {
+    const session = await requireSession();
+    const { data, error, schemaMissing } = await loadCommandCenter(session.userId, session.role);
 
     return (
-        <div className="space-y-8">
-            {/* Welcome Section */}
-            <div>
-                <h1 className="text-3xl font-bold tracking-tight">
-                    Welcome back, {profile?.full_name?.split(' ')[0]}!
-                </h1>
-                <p className="text-muted-foreground mt-2">
-                    Here's your progress overview and latest updates.
-                </p>
-            </div>
+        <>
+            {denied && <AccessDeniedNotice />}
+            <Section error={error} schemaMissing={schemaMissing}>
+                {data.kind === 'intern' && <InternCommandCenter data={data} name={session.profile.full_name} />}
+                {data.kind === 'supervision' && <SupervisionCommandCenter data={data} />}
+                {data.kind === 'talent' && <TalentCommandCenter data={data} />}
+                {data.kind === 'leadership' && <LeadershipCommandCenter data={data} />}
+                {data.kind === 'alumni' && <AlumniCommandCenter data={data} />}
+            </Section>
+        </>
+    );
+}
 
-            {/* Team and Cohort Info */}
-            <div className="grid gap-4 md:grid-cols-2">
-                {/* Cohort Info */}
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">My Cohort</CardTitle>
-                        <Users className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        {memberProfile?.cohort ? (
-                            <div className="space-y-3 mt-2">
-                                <div>
-                                    <div className="text-lg font-bold">{memberProfile.cohort.name}</div>
-                                    <p className="text-xs text-muted-foreground">{memberProfile.cohort.description || 'No description'}</p>
-                                </div>
-                                <div className="flex gap-2 text-xs">
-                                    <Badge variant="secondary">{TRACK_LABELS[memberProfile.cohort.track as keyof typeof TRACK_LABELS] || memberProfile.cohort.track}</Badge>
-                                    <Badge variant="outline">{memberProfile.cohort.is_active ? 'Active' : 'Completed'}</Badge>
-                                </div>
-                                <Button size="sm" variant="outline" className="w-full" asChild>
-                                    <Link href={`/dashboard/cohorts/${memberProfile.cohort.id}`}>
-                                        View Cohort
-                                    </Link>
-                                </Button>
-                            </div>
-                        ) : (
-                            <div className="text-sm text-muted-foreground py-4">
-                                You are not assigned to a cohort yet.
-                            </div>
-                        )}
-                    </CardContent>
-                </Card>
+export default async function CommandCenterPage({
+    searchParams,
+}: {
+    searchParams: Promise<{ denied?: string }>;
+}) {
+    const session = await requireSession();
+    const { denied } = await searchParams;
 
-                {/* Team Info */}
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">My Team</CardTitle>
-                        <FolderKanban className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        {memberProfile?.team_members?.[0]?.team ? (
-                            <div className="space-y-3 mt-2">
-                                <div>
-                                    <div className="text-lg font-bold">{memberProfile.team_members[0].team.name}</div>
-                                    <p className="text-xs text-muted-foreground">
-                                        Role: <span className="capitalize">{memberProfile.team_members[0].role}</span>
-                                    </p>
-                                </div>
-                                <div className="flex gap-2 text-xs">
-                                    <Badge variant="secondary">
-                                        {formatDate(memberProfile.team_members[0].team.created_at)}
-                                    </Badge>
-                                </div>
-                                <Button size="sm" variant="outline" className="w-full" asChild>
-                                    <Link href={`/dashboard/teams/${memberProfile.team_members[0].team.id}`}>
-                                        View Team
-                                    </Link>
-                                </Button>
-                            </div>
-                        ) : (
-                            <div className="text-sm text-muted-foreground py-4">
-                                You are not assigned to a team yet.
-                            </div>
-                        )}
-                    </CardContent>
-                </Card>
-            </div>
+    const firstName = session.profile.full_name?.split(' ')[0];
 
-            {/* Stats Grid */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                {/* Current Stage */}
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Current Stage</CardTitle>
-                        <Target className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">
-                            {memberProfile?.current_stage
-                                ? STAGE_LABELS[memberProfile.current_stage]
-                                : 'N/A'}
-                        </div>
-                        <Badge
-                            className={`mt-2 ${memberProfile?.current_stage
-                                ? STAGE_COLORS[memberProfile.current_stage]
-                                : 'bg-gray-500'
-                                }`}
-                        >
-                            {memberProfile?.track ? TRACK_LABELS[memberProfile.track as keyof typeof TRACK_LABELS] || memberProfile.track : 'No Track'}
-                        </Badge>
-                    </CardContent>
-                </Card>
-
-                {/* Level */}
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Level</CardTitle>
-                        <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">Level {memberProfile?.level || 1}</div>
-                        <p className="text-xs text-muted-foreground mt-2">
-                            {memberProfile?.experience_points || 0} XP
-                        </p>
-                        <Progress value={(memberProfile?.experience_points || 0) % 100} className="mt-2" />
-                    </CardContent>
-                </Card>
-
-                {/* Projects Completed */}
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Projects Completed</CardTitle>
-                        <FolderKanban className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{completedProjects}</div>
-                        <p className="text-xs text-muted-foreground mt-2">
-                            {assignments.length} total assigned
-                        </p>
-                    </CardContent>
-                </Card>
-
-                {/* Average Score */}
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Average Score</CardTitle>
-                        <Award className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">
-                            {averageScore > 0 ? averageScore.toFixed(1) : 'N/A'}
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-2">
-                            {evaluations.length} evaluation{evaluations.length !== 1 ? 's' : ''}
-                        </p>
-                    </CardContent>
-                </Card>
-            </div>
-
-            {/* Active Projects */}
-            <Card>
-                <CardHeader>
-                    <CardTitle>Active Projects</CardTitle>
-                    <CardDescription>Projects you're currently working on</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    {assignments.filter(a => a.status === 'in_progress').length === 0 ? (
-                        <p className="text-muted-foreground text-center py-8">
-                            No active projects at the moment
-                        </p>
-                    ) : (
-                        <div className="space-y-4">
-                            {assignments
-                                .filter(a => a.status === 'in_progress')
-                                .map((assignment) => (
-                                    <div
-                                        key={assignment.id}
-                                        className="flex items-center justify-between p-4 border rounded-lg"
-                                    >
-                                        <div className="space-y-1">
-                                            <p className="font-medium">{assignment.project?.title}</p>
-                                            <p className="text-sm text-muted-foreground">
-                                                {assignment.project?.description}
-                                            </p>
-                                        </div>
-                                        <Badge variant="outline" className="capitalize">
-                                            {assignment.status.replace('_', ' ')}
-                                        </Badge>
-                                    </div>
-                                ))}
-                        </div>
-                    )}
-                </CardContent>
-            </Card>
-
-            {/* Recent Evaluations */}
-            <Card>
-                <CardHeader>
-                    <CardTitle>Recent Evaluations</CardTitle>
-                    <CardDescription>Your latest performance reviews</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    {evaluations.length === 0 ? (
-                        <p className="text-muted-foreground text-center py-8">
-                            No evaluations yet
-                        </p>
-                    ) : (
-                        <div className="space-y-4">
-                            {evaluations.slice(0, 3).map((evaluation) => (
-                                <div
-                                    key={evaluation.id}
-                                    className="flex items-center justify-between p-4 border rounded-lg"
-                                >
-                                    <div className="space-y-1">
-                                        <p className="font-medium">Score: {evaluation.average_score.toFixed(1)}/5</p>
-                                        <p className="text-sm text-muted-foreground">
-                                            {evaluation.feedback || 'No feedback provided'}
-                                        </p>
-                                    </div>
-                                    <Badge
-                                        variant={evaluation.average_score >= 4 ? 'default' : 'secondary'}
-                                    >
-                                        {evaluation.average_score >= 4 ? 'Excellent' : 'Good'}
-                                    </Badge>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </CardContent>
-            </Card>
+    return (
+        <div className="mx-auto max-w-7xl space-y-7">
+            <PageHeader
+                eyebrow={ROLE_LABELS[session.role]}
+                title={firstName ? `Welcome back, ${firstName}` : 'Command center'}
+                description="What needs your attention today, drawn from the same records the rest of the system reports on."
+                icon={LayoutDashboard}
+            />
+            <Suspense fallback={<CardsSkeleton />}>
+                <CommandCenterContent denied={denied === '1'} />
+            </Suspense>
         </div>
     );
 }

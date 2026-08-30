@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Types are in step with the migrations
+        # The committed types are generated from supabase/migrations. Regenerating and
+        # diffing catches a schema change that was made without running `npm run db:types`,
+        # which would otherwise only surface as a runtime error against a live database.
+        run: |
+          python3 scripts/generate-db-types.py
+          git diff --exit-code src/types/database.ts \
+            || (echo "::error::src/types/database.ts is stale. Run 'npm run db:types' and commit." && exit 1)
+
+      - run: npm run typecheck
+
+      - run: npm run lint
+
+      - run: npm test
+
+      - name: Build
+        run: npm run build
+        env:
+          # Build-time placeholders: no query runs during the build, but the env schema
+          # is validated at import, so both values must be present and well-formed.
+          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key

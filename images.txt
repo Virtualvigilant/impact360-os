@@ -1,0 +1,208 @@
+===================================================================
+STYLE SPINE — append verbatim to the end of every prompt below
+===================================================================
+Documentary photography inside a working Nairobi software studio, late
+afternoon falling into blue hour. Shot on a 35mm prime at f/2, camera
+held at standing eye height, shallow depth of field that stays honest
+rather than dreamy. One dominant light source: cool daylight from tall
+west-facing windows on the upper right, falling off fast into deep
+shadow on the left of frame. Grade cool and desaturated toward deep
+indigo-blue, warm practical lamps held back to small specular accents
+only. Fine 35mm grain, gentle highlight rolloff, lifted shadows, never
+crushed black. Real room, real wear, unstyled, never glossy.
+
+===================================================================
+GLOBAL CONSTRAINTS — apply to every image
+===================================================================
+- Aspect ratio 16:9, render at 2560 x 1440.
+- No text, letters, numbers, logos, signage, watermarks or UI of any
+  kind rendered inside the image. All type is HTML on top.
+- Compose so the lower-left third is dark, low-detail and uncluttered:
+  the headline and body copy sit there. Push the subject and all
+  visual interest to the centre-right and upper two-thirds.
+- Keep the subject readable when centre-cropped to 4:5 portrait.
+- No people looking directly into the lens.
+- Consistent horizon and camera height across the set: horizon sits
+  just above the midline, lens roughly 1.6m from the floor, level, no
+  tilt, in every frame.
+
+===================================================================
+IMAGE 01 — ONE HONEST FORM
+===================================================================
+FILE:   public/story/01-apply.webp
+USED:   Chapter 01, full-bleed scene layer
+DEPTH:  Widest shot of the set, camera furthest back. This is frame one
+        of a single continuous dolly push; the camera stands outside the
+        studio's glass entrance looking in, and every subsequent image
+        moves deeper into the same building along the same axis.
+PROMPT:
+A glass-fronted studio entrance at dusk, photographed from the pavement
+outside looking in along the length of the floor. Tall windows fill the
+right two-thirds, warm interior light pooling behind them against a
+cooling blue sky. A young woman in a plain jacket stands just inside the
+threshold in three-quarter profile, backpack on one shoulder, looking
+down the room away from camera. Reflections of the street sit on the
+glass. The left third of frame is an unlit concrete wall in deep shadow,
+empty and flat. Wet pavement holds a soft blue sheen. Late light rakes
+across the upper right. Then append the STYLE SPINE.
+NEGATIVE:
+text, watermark, logo, signage, distorted hands, extra fingers, plastic
+skin, oversaturated, HDR halo, stock-photo handshake, cluttered lower
+left, lens flare, crowds, cars in foreground, neon, rain streaks
+
+===================================================================
+IMAGE 02 — A NAMED READER
+===================================================================
+FILE:   public/story/02-review.webp
+USED:   Chapter 02, full-bleed scene layer
+DEPTH:  The camera has crossed the threshold from image 01 and now stands
+        just inside the entrance, looking down the same axis into the
+        room. Noticeably closer than 01, still a wide establishing view.
+PROMPT:
+The interior of a long open studio floor seen from just inside the door.
+Two rows of desks recede to the right under tall windows, monitors
+turned away from camera showing only their cool backlight. A man in his
+thirties sits at the nearest desk in profile, elbow on the table, chin
+in hand, reading something on screen with unhurried attention. A second
+person is soft and out of focus deeper in the room. Chairs, cable trays
+and a coffee cup read as a working room rather than a showroom. The
+lower left is an unlit partition wall and dark floor, empty. Cool window
+light from upper right. Then append the STYLE SPINE.
+NEGATIVE:
+text, watermark, logo, readable screen content, distorted hands, extra
+fingers, plastic skin, oversaturated, HDR halo, stock-photo handshake,
+cluttered lower left, open-plan stock office, potted plants in
+foreground, people facing camera
+
+===================================================================
+IMAGE 03 — THE SHORTER LIST
+===================================================================
+FILE:   public/story/03-shortlist.webp
+USED:   Chapter 03, full-bleed scene layer
+DEPTH:  The camera has travelled roughly a third of the way down the
+        floor from image 02 and turned slightly right toward a wall.
+        Mid-depth of the set: closer than 02, further back than 04.
+PROMPT:
+A working wall at mid-floor, photographed from a few metres back. Blank
+index cards and unmarked printed sheets are pinned in uneven columns
+across a pinboard on the right, some overlapping, a few hanging loose. A
+woman stands at the wall in profile, arm raised, moving one card from
+one column to another, her face turned away toward the board. Cool
+window light from the upper right skims the paper and throws long soft
+shadows to the left. The lower left of frame is bare floor and the dark
+side of a partition, unoccupied. Depth of field keeps the far end of the
+room soft. Then append the STYLE SPINE.
+NEGATIVE:
+text, watermark, logo, readable writing on cards, handwriting, sticky
+note text, distorted hands, extra fingers, plastic skin, oversaturated,
+HDR halo, cluttered lower left, kanban board, corporate whiteboard
+diagrams, people facing camera
+
+===================================================================
+IMAGE 04 — FORTY-FIVE MINUTES
+===================================================================
+FILE:   public/story/04-interview.webp
+USED:   Chapter 04, full-bleed scene layer
+DEPTH:  The camera has continued past the pinboard of image 03 and now
+        stands at the open doorway of a glass meeting room set into the
+        right-hand side of the same floor. Closer again; the room fills
+        more of the frame than any previous scene.
+PROMPT:
+A small glass-walled meeting room seen from its open doorway. Three
+people sit around one end of a plain table on the right side of frame,
+two on the far side and one nearer camera with their back three-quarters
+turned. Notebooks and a carafe of water sit on the table. Nobody looks
+toward the lens; attention is held between them. Cool daylight comes
+through the room's exterior window on the upper right and passes through
+the glass partition, catching its edge as a thin bright line. The lower
+left is the dark solid wall beside the doorway, in shadow and empty.
+Reflections keep the glass believable. Then append the STYLE SPINE.
+NEGATIVE:
+text, watermark, logo, whiteboard writing, slide deck, distorted hands,
+extra fingers, plastic skin, oversaturated, HDR halo, stock-photo
+handshake, boardroom table, suits, cluttered lower left, people facing
+camera, laptop screen content
+
+===================================================================
+IMAGE 05 — WORK, NOT TRIVIA
+===================================================================
+FILE:   public/story/05-assessment.webp
+USED:   Chapter 05, full-bleed scene layer
+DEPTH:  The camera has moved past the meeting room of image 04 and
+        settled at a single workbench deeper in the floor. Close now:
+        one desk fills the frame where earlier images held whole rooms.
+PROMPT:
+A single workbench photographed from just behind and to the left of the
+person using it. Their hands and forearms are in frame at the lower
+right, one hand resting on a mechanical keyboard, the other holding a
+pencil over an open notebook of blank grid paper. Two monitors sit
+angled away from camera, their glow spilling cool light across the desk
+surface. A soldering iron stand, a coiled cable and a half-drunk mug sit
+where someone actually put them. Window light from the upper right
+picks out the edge of the shoulder. The lower left is dark desk surface
+falling into shadow. Then append the STYLE SPINE.
+NEGATIVE:
+text, watermark, logo, readable code, readable screen content, keyboard
+legends, distorted hands, extra fingers, six fingers, plastic skin,
+oversaturated, HDR halo, cluttered lower left, RGB keyboard lighting,
+gaming setup, hacker aesthetic, green terminal text
+
+===================================================================
+IMAGE 06 — A NAMED PLACEMENT
+===================================================================
+FILE:   public/story/06-placement.webp
+USED:   Chapter 06, full-bleed scene layer
+DEPTH:  The closest and final frame of the push. The camera has arrived
+        at the workbench of image 05 and moved in to shoulder distance;
+        the dolly ends here.
+PROMPT:
+Two people at one desk, framed close from behind the left shoulder of
+the nearer figure. An older colleague leans in from the right, one hand
+gesturing low toward a monitor that faces away from camera; a younger
+colleague sits and follows the gesture, head turned in profile,
+listening. Their shoulders overlap in frame. The monitor's cool light
+falls across both faces from the right. Behind them the studio recedes
+into soft blue-grey darkness with a few distant window highlights. The
+lower left is the dark back of the nearer figure's chair and shadowed
+floor, unbroken and empty. Warm lamp light sits as a small accent
+behind. Then append the STYLE SPINE.
+NEGATIVE:
+text, watermark, logo, readable screen content, distorted hands, extra
+fingers, plastic skin, oversaturated, HDR halo, stock-photo handshake,
+pointing directly at camera, cluttered lower left, high five,
+celebration pose, people facing camera
+
+===================================================================
+IMAGE 00 — OG / social card
+===================================================================
+FILE:   public/story/00-og.webp
+USED:   Open Graph and Twitter card image; meta tags only, never
+        rendered on the page
+DEPTH:  Not part of the dolly. Sits at roughly the depth of image 02,
+        looking down the studio floor, but composed for a much shorter
+        and wider crop.
+PROMPT:
+Render at 1200 x 630. A long open studio floor at blue hour, seen from
+just inside the entrance, desks receding to the right under tall
+windows. Two people work at separate desks in the middle distance, both
+in profile, neither near the edges of frame. Monitors face away from
+camera and read only as cool glow. The left third is an unlit wall and
+dark floor, deliberately empty so a title can be composited there later
+if needed. Cool daylight from the upper right, warm practical lamps as
+small accents deeper in the room. Composition must survive a heavy
+centre crop on small previews. Then append the STYLE SPINE.
+NEGATIVE:
+text, watermark, logo, signage, readable screen content, distorted
+hands, extra fingers, plastic skin, oversaturated, HDR halo, busy left
+third, people facing camera, empty lifeless office, crowds
+
+===================================================================
+SEQUENCING NOTE FOR THE GENERATOR
+===================================================================
+Images 01 through 06 are six frames of one continuous dolly shot moving
+forward through a single building: pavement, threshold, mid-floor,
+meeting room doorway, workbench, shoulder. Camera height, lens, light
+direction, time of day and grade do not change between them. If a frame
+reads as a different room, a different day or a different photographer,
+it is wrong — regenerate it against the STYLE SPINE rather than
+adjusting the others to match.

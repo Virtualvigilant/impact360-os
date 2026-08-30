@@ -1,432 +1,244 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import {
-  ArrowRight,
-  Code2,
-  Users,
-  Trophy,
-  Rocket,
-  CheckCircle2,
-  Laptop,
-  BrainCircuit,
-  Target,
-  Zap,
-  GraduationCap,
-  Layout
-} from 'lucide-react';
+import { PublicFooter, PublicHeader } from '@/components/records/chrome';
+import { Action, Field, NumberedRow, SectionHead, Tag } from '@/components/records/primitives';
 
-type WikipediaSummaryResponse = {
-  title?: string;
-  extract?: string;
-  content_urls?: {
-    desktop?: {
-      page?: string;
-    };
-  };
+export const metadata = {
+    title: 'Impact 360 · Internship OS',
+    description:
+        "Impact 360's operating system of record for internships — recruitment, learning, work, supervision, evidence, evaluation and outcome.",
 };
 
-const AI_SUMMARY_ENDPOINT = 'https://en.wikipedia.org/api/rest_v1/page/summary/Artificial_intelligence';
-const AI_SUMMARY_FALLBACK_URL = 'https://en.wikipedia.org/wiki/Artificial_intelligence';
+/** The four programme stages, in order. */
+const STAGES: [string, string, string][] = [
+    ['01', 'Orientation', 'Expectations set, programme documents completed, and a competency baseline recorded before any work is assigned.'],
+    ['02', 'Skills development', 'Track-specific capability built through guided practice, against learning goals with an agreed success measure.'],
+    ['03', 'Project work', 'Contribution to real projects, with evidence attached to each task and reviewed by a named supervisor.'],
+    ['04', 'Final evaluation', 'Rubric assessment, intern feedback, completion verified against requirements, and a decision on what comes next.'],
+];
 
-async function getAiSummary() {
-  try {
-    const response = await fetch(AI_SUMMARY_ENDPOINT, {
-      next: { revalidate: 21600 },
-      headers: {
-        Accept: 'application/json',
-      },
-    });
+/** What the system keeps a record of. Each maps to real tables. */
+const RECORDS: [string, string, string][] = [
+    ['R-01', 'Intern record', 'Identity, placement, track, named mentor and supervisor, current phase and derived risk level.'],
+    ['R-02', 'Learning goals', 'Competency targets with a stated success measure, progress, and the mentor notes against each.'],
+    ['R-03', 'Work and evidence', 'Tasks, acceptance criteria, submitted evidence, review decisions and the comments behind them.'],
+    ['R-04', 'Weekly check-ins', 'Achievements, learning, blockers, support needed and wellbeing — with the mentor response recorded.'],
+    ['R-05', 'Feedback', 'Multi-source and attributable, always naming a next action rather than only a verdict.'],
+    ['R-06', 'Evaluation', 'Rubric scores where every criterion carries a written justification, not a number on its own.'],
+    ['R-07', 'Operations', 'Attendance, leave, documents, assets, system access and stipends, each with a named decision-maker.'],
+    ['R-08', 'Outcome', 'Completion requirements verified, certificate issued, and an honest recommendation for what follows.'],
+];
 
-    if (!response.ok) {
-      throw new Error(`Wikipedia API request failed: ${response.status}`);
-    }
+const TRACKS: [string, string][] = [
+    ['T-01', 'Software Development'],
+    ['T-02', 'UI/UX & Product Design'],
+    ['T-03', 'IT & Technical Operations'],
+    ['T-04', 'Data & AI'],
+    ['T-05', 'Cybersecurity'],
+];
 
-    const data: WikipediaSummaryResponse = await response.json();
+export default function Home() {
+    return (
+        <div className="min-h-screen bg-background">
+            <main>
+                {/* ── Hero with transparent navbar and glassmorphism overlay ── */}
+                <section className="relative min-h-[90vh] overflow-hidden">
+                    <PublicHeader transparent />
 
-    return {
-      title: data.title || 'Artificial intelligence',
-      extract: data.extract || 'Artificial intelligence is the simulation of human intelligence by computer systems, including learning, reasoning, and problem-solving.',
-      url: data.content_urls?.desktop?.page || AI_SUMMARY_FALLBACK_URL,
-    };
-  } catch (error) {
-    console.error('Failed to fetch AI summary:', error);
+                    {/* Background image */}
+                    <Image
+                        src="/hero-bg.jpg"
+                        alt=""
+                        fill
+                        className="object-cover object-center"
+                        priority
+                        quality={90}
+                    />
 
-    return {
-      title: 'Artificial intelligence',
-      extract: 'Artificial intelligence is the simulation of human intelligence by computer systems, including learning, reasoning, and problem-solving.',
-      url: AI_SUMMARY_FALLBACK_URL,
-    };
-  }
-}
+                    {/* Dark gradient overlay for readability */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-[#0B0D10]/95 via-[#0B0D10]/75 to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#0B0D10]/80 via-transparent to-[#0B0D10]/30" />
 
-export default async function Home() {
-  const aiSummary = await getAiSummary();
+                    {/* Decorative blue accent shards */}
+                    <div className="absolute -right-20 top-0 h-full w-1/2 bg-gradient-to-bl from-primary/20 via-transparent to-transparent" />
+                    <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
 
-  return (
-    <div className="flex flex-col min-h-screen bg-background text-foreground selection:bg-primary/30">
-      {/* Ambient Background Effects */}
-      <div className="fixed inset-0 z-0 pointer-events-none">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-primary/20 blur-[120px]" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-primary/20 blur-[120px]" />
-      </div>
+                    {/* Content */}
+                    <div className="relative z-10 mx-auto flex min-h-[90vh] max-w-6xl items-center px-5 lg:px-8 pt-24 pb-20">
+                        <div className="w-full max-w-3xl py-24 lg:py-32">
+                            {/* Glassmorphism badge */}
+                            <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-1.5 backdrop-blur-md">
+                                <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+                                <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/90">
+                                    ITEK Solutions · Internship Programme
+                                </span>
+                            </div>
 
-      {/* Header / Nav */}
-      <header className="px-6 py-4 flex items-center justify-between fixed top-0 w-full z-50 transition-all duration-300 bg-background/80 backdrop-blur-md border-b border-border">
-        <div className="flex items-center gap-2 font-bold text-xl tracking-tight">
-          <div className="relative h-8 w-8 rounded-lg bg-primary flex items-center justify-center overflow-hidden">
-            <Image
-              src="/logo.png"
-              alt="Impact360 OS Logo"
-              fill
-              className="object-cover"
-            />
-          </div>
-          <span className="font-heading uppercase tracking-wide">Impact360 OS</span>
+                            <h1 className="mt-8 text-[clamp(2.5rem,6vw,4.5rem)] font-bold leading-[1.04] tracking-[-0.03em] text-white">
+                                Every stage of an internship,
+                                <br className="hidden sm:block" />
+                                <span className="bg-gradient-to-r from-white via-blue-200 to-primary bg-clip-text text-transparent">
+                                    on the record.
+                                </span>
+                            </h1>
+
+                            <p className="mt-8 max-w-2xl text-[17px] leading-8 text-white/70">
+                                Who this person is, why they were selected, what they should learn, who owns their supervision,
+                                what they actually built, what evidence exists, and what they are ready for next. Written down,
+                                attributable, and available to the person it describes.
+                            </p>
+
+                            {/* CTA buttons */}
+                            <div className="mt-10 flex flex-wrap items-center gap-4">
+                                <Link
+                                    href="/opportunities"
+                                    className="group inline-flex items-center justify-center rounded-lg bg-primary px-6 py-3.5 text-[13px] font-bold uppercase tracking-[0.14em] text-white shadow-lg shadow-primary/30 transition-all hover:bg-primary/90 hover:shadow-xl hover:shadow-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-[#0B0D10]"
+                                >
+                                    View open opportunities
+                                    <svg className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                                    </svg>
+                                </Link>
+                                <Link
+                                    href="/sign-in"
+                                    className="inline-flex items-center justify-center rounded-lg border border-white/20 bg-white/5 px-6 py-3.5 text-[13px] font-bold uppercase tracking-[0.14em] text-white/90 backdrop-blur-sm transition-all hover:border-white/40 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0B0D10]"
+                                >
+                                    Open the workspace
+                                </Link>
+                            </div>
+
+                            {/* Glassmorphism stats bar */}
+                            <div className="mt-16 grid max-w-2xl grid-cols-2 gap-px overflow-hidden rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl sm:grid-cols-4">
+                                {[
+                                    ['Tracks', 'Five specialist areas'],
+                                    ['Commitment', '40 hrs / week'],
+                                    ['Supervision', 'Named mentor'],
+                                    ['On completion', 'Verified certificate'],
+                                ].map(([label, value]) => (
+                                    <div key={label} className="border-r border-white/5 px-5 py-4 last:border-r-0">
+                                        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-primary/80">{label}</p>
+                                        <p className="mt-1.5 text-[14px] font-medium text-white/90">{value}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                {/* Stages */}
+                <section id="programme" className="mx-auto max-w-6xl px-5 py-20 lg:px-8 lg:py-24">
+                    <SectionHead
+                        label="The programme"
+                        title="Four stages, each producing something you keep."
+                        lede="An internship is only worth doing if there is evidence of it afterwards. Each stage closes with a record the intern owns and can show to someone else."
+                        aside="Stages 01–04"
+                    />
+
+                    <div className="mt-12">
+                        {STAGES.map(([index, title, body]) => (
+                            <NumberedRow key={index} index={index} title={title} body={body} />
+                        ))}
+                        <div className="border-t border-border" />
+                    </div>
+                </section>
+
+                {/* What is recorded */}
+                <section className="border-y border-border bg-muted/30">
+                    <div className="mx-auto max-w-6xl px-5 py-20 lg:px-8 lg:py-24">
+                        <SectionHead
+                            label="The register"
+                            title="What the system holds."
+                            lede="Not a project tracker with an internship theme. These are the records a programme needs in order to answer hard questions about it a year later."
+                            aside="8 record types"
+                        />
+
+                        <div className="mt-12 grid gap-6 md:grid-cols-2">
+                            {RECORDS.map(([ident, title, body], i) => {
+                                const row = Math.floor(i / 2);
+                                const col = i % 2;
+                                const isBlue = (row + col) % 2 === 0;
+
+                                return (
+                                    <div
+                                        key={ident}
+                                        className={`rounded-2xl p-6 transition-all ${
+                                            isBlue
+                                                ? 'bg-[#306CEC] text-white shadow-lg shadow-[#306CEC]/20 border border-[#306CEC]'
+                                                : 'bg-card text-foreground border border-border shadow-sm'
+                                        }`}
+                                    >
+                                        <div className="flex items-baseline gap-4">
+                                            <span className={`ident ${isBlue ? 'text-white/80' : 'text-primary'}`}>{ident}</span>
+                                            <h3 className={`text-[16px] font-semibold tracking-[-0.01em] ${isBlue ? 'text-white' : 'text-foreground'}`}>
+                                                {title}
+                                            </h3>
+                                        </div>
+                                        <p className={`mt-2.5 pl-[3.6rem] text-[14px] leading-6 ${isBlue ? 'text-white/85' : 'text-muted-foreground'}`}>
+                                            {body}
+                                        </p>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                </section>
+
+                {/* Tracks */}
+                <section id="tracks" className="mx-auto max-w-6xl px-5 py-20 lg:px-8 lg:py-24">
+                    <SectionHead
+                        label="Tracks"
+                        title="Five tracks. One standard of professional growth."
+                        lede="The work differs. What is expected of you — evidence, reflection, communication, professionalism — does not."
+                    />
+
+                    <div className="mt-12 max-w-3xl">
+                        {TRACKS.map(([ident, name]) => (
+                            <div key={ident} className="flex items-baseline gap-6 border-t border-border py-5">
+                                <span className="ident text-primary">{ident}</span>
+                                <span className="text-[17px] font-medium tracking-[-0.01em]">{name}</span>
+                            </div>
+                        ))}
+                        <div className="flex items-baseline gap-6 border-y border-border py-5">
+                            <span className="ident text-muted-foreground">T-06</span>
+                            <span className="text-[17px] text-muted-foreground">Other technology areas, as ITEK needs</span>
+                        </div>
+                    </div>
+                </section>
+
+                {/* Closing */}
+                <section className="border-t border-foreground bg-foreground text-background">
+                    <div className="mx-auto max-w-6xl px-5 py-20 lg:px-8 lg:py-24">
+                        <p className="label-micro text-background/55">Applications</p>
+                        <h2 className="mt-6 max-w-3xl text-[clamp(1.875rem,4vw,3rem)] font-semibold leading-[1.1] tracking-[-0.02em]">
+                            A person reads every application, and writes down why.
+                        </h2>
+                        <p className="mt-6 max-w-2xl text-[16px] leading-8 text-background/70">
+                            Assistive scoring informs that decision; it never makes it. If your application does not go
+                            forward, the reason exists in writing and you can ask for it.
+                        </p>
+                        <div className="mt-10 flex flex-wrap items-center gap-x-8 gap-y-4">
+                            <Link
+                                href="/opportunities"
+                                className="label-micro inline-flex items-center justify-center bg-background px-5 py-3.5 text-foreground transition-opacity hover:opacity-88 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-background focus-visible:ring-offset-2 focus-visible:ring-offset-foreground"
+                            >
+                                See what is open
+                            </Link>
+                            <span className="label-micro text-background/55">
+                                Unsuccessful applications are kept 12 months, then deleted
+                            </span>
+                        </div>
+
+                        <div className="mt-14 flex flex-wrap gap-2">
+                            <Tag tone="quiet">Named supervision</Tag>
+                            <Tag tone="quiet">Written decisions</Tag>
+                            <Tag tone="quiet">Evidence you keep</Tag>
+                            <Tag tone="quiet">Verified completion</Tag>
+                        </div>
+                    </div>
+                </section>
+            </main>
+
+            <PublicFooter />
         </div>
-        <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-muted-foreground">
-          {['Features', 'Tracks', 'Community'].map((item) => (
-            <Link key={item} href={`#${item.toLowerCase()}`} className="hover:text-foreground transition-colors relative group">
-              {item}
-              <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all group-hover:w-full" />
-            </Link>
-          ))}
-        </nav>
-        <div className="flex items-center gap-4">
-          <Link href="/sign-in">
-            <Button variant="ghost" className="text-muted-foreground hover:text-foreground hover:bg-primary/10">Sign In</Button>
-          </Link>
-          <Link href="/sign-up">
-            <Button className="bg-foreground text-background hover:bg-foreground/90 font-semibold shadow-lg hover:shadow-xl transition-all">
-              Get Started
-            </Button>
-          </Link>
-        </div>
-      </header>
-
-      <main className="flex-1 relative z-10 pt-24">
-        {/* Hero Section */}
-        <section className="py-20 md:py-32 px-6">
-          <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center gap-12 lg:gap-20">
-            <div className="flex-1 space-y-8 text-center md:text-left">
-              <Badge variant="outline" className="border-primary/50 text-primary bg-primary/10 px-4 py-1.5 rounded-full text-sm backdrop-blur-md">
-                ✨ Transforming Tech Careers
-              </Badge>
-              <h1 className="text-5xl lg:text-7xl font-bold tracking-tight leading-[1.1] font-heading uppercase">
-                Build <span className="text-transparent bg-clip-text bg-linear-to-r from-primary to-[#4A7EEC]">Real-World</span> Tech Experience
-              </h1>
-              <p className="text-xl text-muted-foreground max-w-2xl mx-auto md:mx-0 leading-relaxed font-sans">
-                Stop doing tutorials. Start shipping code. Impact360 OS connects you with real projects, expert mentors, and a gamified career roadmap.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 pt-4 justify-center md:justify-start">
-                <Link href="/sign-up">
-                  <Button size="lg" className="h-14 px-8 text-lg bg-primary hover:bg-primary/90 border-0 shadow-lg hover:shadow-primary/20 transition-all transform hover:scale-105">
-                    Start Your Journey <ArrowRight className="ml-2 h-5 w-5" />
-                  </Button>
-                </Link>
-                <Link href="#features">
-                  <Button size="lg" variant="outline" className="h-14 px-8 text-lg border-primary/20 bg-primary/5 hover:bg-primary/10 text-foreground backdrop-blur-sm">
-                    Explore Features
-                  </Button>
-                </Link>
-              </div>
-
-              {/* Trust Badge */}
-              <div className="pt-8 flex items-center justify-center md:justify-start gap-4 text-sm text-muted-foreground">
-                <div className="flex -space-x-3">
-                  {[1, 2, 3, 4].map((i) => (
-                    <div key={i} className="h-10 w-10 rounded-full border-2 border-background bg-muted flex items-center justify-center text-xs font-bold text-foreground overflow-hidden shadow-sm">
-                      <div className="h-full w-full bg-linear-to-br from-white/20 to-transparent" />
-                    </div>
-                  ))}
-                </div>
-                <div>
-                  <div className="font-semibold text-foreground">500+ Members</div>
-                  <div className="text-xs">Joined this month</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Hero Graphic / Glass Card Stack */}
-            <div className="flex-1 relative w-full h-[500px] hidden md:block perspective-[2000px]">
-              {/* Card 1 (Back) */}
-              <div className="absolute top-0 right-10 w-[300px] h-[400px] rounded-3xl bg-card/50 border border-border backdrop-blur-md -rotate-6 translate-y-8 opacity-60 transform transition-transform hover:-rotate-8 shadow-2xl">
-                <div className="p-6">
-                  <div className="flex justify-between items-center mb-6">
-                    <div className="text-sm text-muted-foreground">Activity</div>
-                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center"><Layout className="h-4 w-4 text-primary" /></div>
-                  </div>
-                  <div className="h-32 rounded-xl bg-linear-to-br from-primary/20 to-primary/10 mb-4" />
-                  <div className="space-y-3">
-                    <div className="h-2 w-3/4 bg-muted rounded-full" />
-                    <div className="h-2 w-1/2 bg-muted rounded-full" />
-                  </div>
-                </div>
-              </div>
-
-              {/* Card 2 (Middle) */}
-              <div className="absolute top-10 right-[15%] w-[320px] h-[450px] rounded-3xl bg-card border border-border backdrop-blur-xl -rotate-3 translate-y-4 opacity-80 transform transition-transform hover:-rotate-5 hover:translate-y-2 shadow-xl z-10">
-                <div className="p-6 flex flex-col h-full">
-                  <div className="flex items-center gap-3 mb-8">
-                    <div className="h-10 w-10 rounded-full bg-linear-to-br from-green-400 to-emerald-600 flex items-center justify-center shadow-lg">
-                      <CheckCircle2 className="h-5 w-5 text-white" />
-                    </div>
-                    <div>
-                      <div className="font-bold text-lg">Project Completed</div>
-                      <div className="text-xs text-muted-foreground">Just now</div>
-                    </div>
-                  </div>
-                  <div className="flex-1 rounded-2xl bg-muted/50 p-4 border border-border mb-4 space-y-4">
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-muted-foreground">Performance</span>
-                      <span className="text-green-500 font-bold">+24%</span>
-                    </div>
-                    <div className="h-1 w-full bg-muted rounded-full overflow-hidden">
-                      <div className="h-full w-[70%] bg-green-500 rounded-full" />
-                    </div>
-                  </div>
-                  <Button className="w-full bg-primary/10 hover:bg-primary/20 text-primary border border-primary/10 font-medium shadow-none">View Details</Button>
-                </div>
-              </div>
-
-              {/* Card 3 (Front - Main) */}
-              <div className="absolute top-[80px] right-[30%] w-[340px] h-[480px] rounded-[32px] bg-card border border-border backdrop-blur-2xl shadow-2xl z-20 flex flex-col transform transition-transform hover:-translate-y-2 group">
-                <div className="p-8 flex flex-col h-full">
-                  <div className="flex justify-between items-start mb-8">
-                    <div>
-                      <h3 className="text-xs font-semibold tracking-wider text-primary uppercase mb-1">Current Level</h3>
-                      <div className="text-4xl font-bold font-heading">Lvl 5</div>
-                    </div>
-                    <div className="h-12 w-12 rounded-2xl bg-primary flex items-center justify-center shadow-lg group-hover:shadow-primary/50 transition-shadow">
-                      <Rocket className="h-6 w-6 text-primary-foreground" />
-                    </div>
-                  </div>
-
-                  {/* Progress Circle Visual */}
-                  <div className="flex-1 flex items-center justify-center relative my-4">
-                    <div className="w-48 h-48 rounded-full border-12 border-muted flex items-center justify-center relative">
-                      <div className="absolute inset-0 rounded-full border-12 border-primary border-t-transparent rotate-45" />
-                      <div className="text-center">
-                        <div className="text-3xl font-bold">85%</div>
-                        <div className="text-xs text-muted-foreground uppercase tracking-widest">XP Gained</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-3 mt-auto">
-                    <div className="flex justify-between text-sm text-foreground/80">
-                      <span>Next Rank</span>
-                      <span className="text-primary">Rising Star</span>
-                    </div>
-                    <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
-                      <div className="h-full w-[85%] bg-primary rounded-full" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Stats Section with Glass Cards */}
-        <section className="py-12 px-6">
-          <div className="max-w-7xl mx-auto">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8">
-              {[
-                { number: "500+", label: "Active Members", icon: Users },
-                { number: "120+", label: "Projects Shipped", icon: Layout },
-                { number: "50+", label: "Expert Mentors", icon: Zap },
-                { number: "95%", label: "Placement Rate", icon: Target },
-              ].map((stat, i) => (
-                <div key={i} className="p-6 rounded-3xl bg-card border border-border backdrop-blur-md flex flex-col items-center justify-center text-center hover:border-primary/50 transition-colors group shadow-lg">
-                  <div className="mb-3 h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
-                    <stat.icon className="h-5 w-5" />
-                  </div>
-                  <div className="text-3xl font-bold mb-1 font-heading">{stat.number}</div>
-                  <div className="text-sm text-muted-foreground">{stat.label}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* Features Section */}
-        <section id="features" className="py-24 px-6 relative overflow-hidden bg-secondary">
-          <div className="absolute inset-0 bg-linear-to-b from-transparent via-primary/5 to-transparent pointer-events-none" />
-
-          <div className="max-w-7xl mx-auto relative z-10">
-            <div className="text-center mb-20 space-y-4">
-              <h2 className="text-4xl md:text-5xl font-bold font-heading uppercase">Why Impact360?</h2>
-              <p className="text-xl text-muted-foreground max-w-2xl mx-auto font-sans">
-                Features designed to accelerate your growth from day one.
-              </p>
-            </div>
-
-            <div className="grid md:grid-cols-3 gap-8">
-              {[
-                {
-                  icon: Laptop,
-                  title: "Real Projects",
-                  desc: "Work on live applications with real stakeholders. Build a portfolio that actually matters to employers.",
-                  gradient: "from-blue-500 to-cyan-400"
-                },
-                {
-                  icon: Users,
-                  title: "Expert Mentorship",
-                  desc: "Weekly code reviews and 1:1 sessions with senior engineers from top tech companies.",
-                  gradient: "from-purple-500 to-indigo-400"
-                },
-                {
-                  icon: Trophy,
-                  title: "Gamified Progress",
-                  desc: "Level up your skills, earn badges, and track your journey on the global leaderboard.",
-                  gradient: "from-orange-500 to-amber-400"
-                }
-              ].map((item, i) => (
-                <div key={i} className="group relative p-1 rounded-3xl bg-linear-to-b from-primary/20 to-transparent hover:from-primary/40 transition-all duration-500">
-                  <div className="absolute inset-0 rounded-3xl bg-linear-to-b from-primary/10 to-transparent blur-md -z-10" />
-                  <div className="h-full bg-card rounded-[22px] p-8 border border-border relative overflow-hidden shadow-xl">
-                    {/* Hover Gradient Bloom */}
-                    <div className={`absolute -top-20 -right-20 w-40 h-40 bg-linear-to-br from-primary to-[#4A7EEC] blur-[60px] opacity-20 group-hover:opacity-40 transition-opacity`} />
-
-                    <div className={`h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-6 shadow-lg transform group-hover:-translate-y-1 transition-transform`}>
-                      <item.icon className="h-7 w-7 text-primary" />
-                    </div>
-                    <h3 className="text-2xl font-bold mb-4 font-heading">{item.title}</h3>
-                    <p className="text-muted-foreground leading-relaxed font-sans">{item.desc}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* Tracks Section */}
-        <section id="tracks" className="py-24 px-6 bg-background">
-          <div className="max-w-7xl mx-auto">
-            <div className="flex flex-col md:flex-row justify-between items-end gap-6 mb-16">
-              <div>
-                <h2 className="text-4xl font-bold mb-4 font-heading uppercase">Choose Your Path</h2>
-                <p className="text-xl text-muted-foreground font-sans">Curated learning tracks for modern tech roles.</p>
-              </div>
-              <Link href="/sign-up">
-                <Button variant="outline" className="border-border text-foreground hover:bg-muted">View All Tracks</Button>
-              </Link>
-            </div>
-
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[
-                { title: "Web Development", icon: Code2, tags: ["React", "Next.js", "Node.js"], color: "text-blue-400", bg: "bg-blue-500/10" },
-                { title: "AI & Machine Learning", icon: BrainCircuit, tags: ["Python", "TensorFlow", "PyTorch"], color: "text-purple-400", bg: "bg-purple-500/10" },
-                { title: "Mobile Engineering", icon: Target, tags: ["React Native", "Flutter", "iOS"], color: "text-green-400", bg: "bg-green-500/10" },
-              ].map((track, i) => (
-                <Link key={i} href="/sign-up" className="block group">
-                  <div className="h-full p-6 rounded-3xl bg-card border border-border hover:border-primary/50 hover:bg-card/80 transition-all backdrop-blur-sm shadow-lg">
-                    <div className="flex justify-between items-start mb-6">
-                      <div className={`h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary`}>
-                        <track.icon className="h-6 w-6" />
-                      </div>
-                      <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
-                    </div>
-                    <h3 className="text-xl font-bold mb-3 font-heading uppercase">{track.title}</h3>
-                    <div className="flex flex-wrap gap-2">
-                      {track.tags.map(tag => (
-                        <Badge key={tag} variant="secondary" className="bg-secondary text-secondary-foreground hover:bg-secondary/80 border-0">
-                          {tag}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section className="py-20 px-6 bg-secondary">
-          <div className="max-w-4xl mx-auto">
-            <div className="rounded-3xl border border-border bg-card p-8 md:p-10 space-y-4">
-              <Badge variant="outline" className="w-fit">AI Insight • Trusted Source</Badge>
-              <h2 className="text-3xl md:text-4xl font-bold font-heading uppercase">{aiSummary.title}</h2>
-              <p className="text-muted-foreground text-lg leading-relaxed font-sans">{aiSummary.extract}</p>
-              <Link href={aiSummary.url} target="_blank" rel="noreferrer">
-                <Button variant="outline" className="mt-2">
-                  Read full article <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </section>
-
-        {/* CTA Section */}
-        <section className="py-32 px-6 relative overflow-hidden bg-background">
-          {/* Background glow for CTA */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-full max-w-3xl h-full bg-primary/10 blur-[100px] rounded-full" />
-          </div>
-
-          <div className="max-w-4xl mx-auto text-center relative z-10 space-y-10">
-            <h2 className="text-5xl md:text-6xl font-bold tracking-tight font-heading uppercase">
-              Ready to launch your career?
-            </h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto font-sans">
-              Join hundreds of developers building the future. Review code, ship products, and get hired.
-            </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
-              <Link href="/sign-up">
-                <Button size="lg" className="h-16 px-10 text-xl font-bold rounded-full bg-primary text-primary-foreground hover:bg-primary/90 shadow-2xl transition-all hover:scale-105">
-                  Get Started Now
-                </Button>
-              </Link>
-            </div>
-            <p className="text-sm text-muted-foreground">No credit card required • Free for students</p>
-          </div>
-        </section>
-      </main>
-
-      <footer className="py-12 px-6 border-t border-border bg-background text-muted-foreground font-sans">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between gap-12">
-          <div className="space-y-4 max-w-xs">
-            <div className="flex items-center gap-2 font-bold text-xl text-foreground">
-              <div className="relative h-8 w-8">
-                <Image
-                  src="/logo.png"
-                  alt="Impact360 OS Logo"
-                  fill
-                  className="object-contain"
-                />
-              </div>
-              <span className="font-heading uppercase">Impact360 OS</span>
-            </div>
-            <p className="text-sm">
-              Empowering the next generation of tech leaders through structured learning and practical experience.
-            </p>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-12 text-sm">
-            <div className="space-y-4">
-              <h4 className="font-semibold text-foreground font-heading uppercase">Platform</h4>
-              <Link href="#" className="block hover:text-primary transition-colors">Features</Link>
-              <Link href="#" className="block hover:text-primary transition-colors">Pricing</Link>
-              <Link href="#" className="block hover:text-primary transition-colors">About</Link>
-            </div>
-            <div className="space-y-4">
-              <h4 className="font-semibold text-foreground font-heading uppercase">Resources</h4>
-              <Link href="#" className="block hover:text-primary transition-colors">Blog</Link>
-              <Link href="#" className="block hover:text-primary transition-colors">Documentation</Link>
-              <Link href="#" className="block hover:text-primary transition-colors">Community</Link>
-            </div>
-            <div className="space-y-4">
-              <h4 className="font-semibold text-foreground font-heading uppercase">Legal</h4>
-              <Link href="#" className="block hover:text-primary transition-colors">Privacy</Link>
-              <Link href="#" className="block hover:text-primary transition-colors">Terms</Link>
-            </div>
-          </div>
-        </div>
-        <div className="max-w-7xl mx-auto mt-12 pt-8 border-t border-border text-center text-sm">
-          © {new Date().getFullYear()} Impact360 OS. All rights reserved.
-        </div>
-      </footer>
-    </div>
-  );
+    );
 }

@@ -1,404 +1,176 @@
-# Impact360 OS — Platform Documentation
+# ITEK Internship OS — architecture notes
 
-> **Impact360 OS** is a full-stack developer training & team management platform that takes beginners through a structured pipeline—from intake to client-ready deployment—using real projects, evaluations, gamification, and mentorship.
+Companion to the [README](README.md). This covers the decisions behind the code, and the
+things a future maintainer would otherwise have to rediscover.
 
----
+## Lifecycle
 
-## Table of Contents
+1. Programme and track design
+2. Opportunity publication
+3. Application and consent
+4. Human-accountable screening
+5. Interview and structured assessment
+6. Offer and acceptance
+7. Placement and onboarding
+8. Learning plan and competency baseline
+9. Projects, tasks and evidence
+10. Weekly check-ins and multi-source feedback
+11. Attendance, leave, assets, access and support
+12. Midpoint and final rubric evaluations
+13. Completion verification and certification
+14. Alumni, project, contract or employment pathway
 
-1. [Quick Start](#quick-start)
-2. [Tech Stack](#tech-stack)
-3. [Architecture Overview](#architecture-overview)
-4. [User Roles & Permissions](#user-roles--permissions)
-5. [Developer Pipeline](#developer-pipeline)
-6. [Learning Tracks](#learning-tracks)
-7. [Feature Reference](#feature-reference)
-8. [Database Schema](#database-schema)
-9. [Project Structure](#project-structure)
-10. [Environment Variables](#environment-variables)
-11. [Deployment](#deployment)
-12. [SQL Migrations](#sql-migrations)
-13. [Contributing](#contributing)
+Every consequential stage produces an attributable record.
 
----
+## Core data graph
 
-## Quick Start
-
-```bash
-# 1. Clone the repository
-git clone https://github.com/Virtualvigilant/impact360-os.git
-cd impact360-os
-
-# 2. Install dependencies
-npm install
-
-# 3. Copy environment file and fill in your Supabase credentials
-cp .env.example .env.local
-
-# 4. Start the development server
-npm run dev
+```text
+Programme → Track → Opportunity → Application → Interview / Offer → Placement
+                                                            │
+                   Mentor / Supervisor ──────────────────────┤
+                                                            │
+                 Project → Task → Evidence → Feedback → Evaluation
+                                      │
+                           Learning goal → Competency
+                                      │
+                 Attendance / Leave / Documents / Assets / Access / Concerns
+                                      │
+                        Completion → Certificate → Alumni / Opportunity
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
-
----
-
-## Tech Stack
-
-| Layer | Technology | Purpose |
-|-------|-----------|---------|
-| Framework | **Next.js 16** (App Router) | Server-side rendering, routing, API |
-| UI Library | **React 19** | Component-based UI |
-| Language | **TypeScript 5** | Type-safe development |
-| Styling | **Tailwind CSS 4** | Utility-first CSS |
-| Component Kit | **shadcn/ui** (Radix primitives) | Accessible, composable UI components |
-| Icons | **Lucide React** | 1,000+ consistent SVG icons |
-| Charts | **Recharts** | Analytics visualizations |
-| Backend/DB | **Supabase** (PostgreSQL + Auth + Realtime) | Authentication, database, row-level security, real-time subscriptions |
-| Toasts | **Sonner** | Notification toasts |
-| Theming | **next-themes** | Light/dark mode toggle |
-| Date Utils | **date-fns** | Date formatting & manipulation |
-
----
-
-## Architecture Overview
-
-```
-┌─────────────────────────────────────────────────────┐
-│                   Next.js App Router                 │
-│  ┌──────────┐  ┌──────────────┐  ┌───────────────┐  │
-│  │  (auth)   │  │ (dashboard)  │  │  Landing Page │  │
-│  │ sign-in   │  │  14 sections │  │   / (public)  │  │
-│  │ sign-up   │  │  role-gated  │  │               │  │
-│  └──────────┘  └──────────────┘  └───────────────┘  │
-├─────────────────────────────────────────────────────┤
-│                   Component Layer                    │
-│  admin/ · auth/ · teams/ · notifications/            │
-│  layout/ · charts/ · evaluations/ · onboarding/      │
-│  ui/ (18 shadcn components)                          │
-├─────────────────────────────────────────────────────┤
-│                    Hooks & Utils                     │
-│  useAuth · useMembers · useNotifications · useProjects│
-│  format · badges · constants · notifications          │
-├─────────────────────────────────────────────────────┤
-│                  Supabase (Backend)                   │
-│  PostgreSQL · Auth · Realtime · RLS Policies          │
-│  12 tables · 6 enums · Row-Level Security             │
-└─────────────────────────────────────────────────────┘
-```
-
----
-
-## User Roles & Permissions
-
-| Role | Description | Key Capabilities |
-|------|-------------|-----------------|
-| **Admin** | Program manager / CEO | Create cohorts, projects, teams; assign tasks; evaluate submissions; manage members; view analytics; promote/demote users |
-| **Mentor** | Senior developer / guide | View teams & members; review submissions; assist with evaluations; limited admin access |
-| **Member** | Learner / developer-in-training | View assigned projects/tasks; submit work; track progress; earn badges; update profile |
-
-**Row-Level Security (RLS)** enforces these permissions at the database level—every Supabase query is automatically filtered based on the authenticated user's role.
-
----
-
-## Developer Pipeline
-
-Members progress through a **6-stage pipeline** that mirrors a real developer career path:
-
-```
-┌─────────┐    ┌──────────┐    ┌──────────────────┐    ┌────────────┐    ┌──────────────┐    ┌──────────┐
-│  INTAKE  │ →  │ TRAINING │ →  │ INTERNAL PROJECTS│ →  │ EVALUATION │ →  │ CLIENT READY │ →  │ DEPLOYED │
-│ (Gray)   │    │ (Blue)   │    │ (Purple)         │    │ (Yellow)   │    │ (Green)      │    │(Emerald) │
-└─────────┘    └──────────┘    └──────────────────┘    └────────────┘    └──────────────┘    └──────────┘
-```
-
-| Stage | What Happens |
-|-------|-------------|
-| **Intake** | New member joins, completes onboarding wizard, selects track & experience level |
-| **Training** | Works through curriculum modules for their chosen track |
-| **Internal Projects** | Assigned real projects (solo or team), builds deliverables |
-| **Evaluation** | Submissions are graded on 6 criteria (code quality, architecture, problem solving, communication, teamwork, reliability) |
-| **Client Ready** | Passed evaluation—ready for client-facing work |
-| **Deployed** | Actively working on client/production projects |
-
----
-
-## Learning Tracks
-
-Each member selects a specialization track:
-
-| Track | Key Skills |
-|-------|-----------|
-| 🌐 **Web Development** | HTML/CSS, JavaScript, TypeScript, React, Next.js, Node.js, SQL, REST APIs, Tailwind CSS, Git |
-| 🤖 **AI & Machine Learning** | Python, NumPy, Pandas, TensorFlow, PyTorch, NLP, Computer Vision, LLMs, Deep Learning |
-| 🎨 **UI/UX Design** | Figma, Adobe XD, Wireframing, Prototyping, Design Systems, Typography, Color Theory, Accessibility |
-| 📱 **Mobile Development** | React Native, Flutter, Swift, Kotlin, Firebase, App Store Publishing, Push Notifications |
-| ⚙️ **DevOps Engineering** | Linux, Docker, Kubernetes, AWS/GCP/Azure, CI/CD, Terraform, Monitoring, Shell Scripting |
-
----
-
-## Feature Reference
-
-### 🏠 Dashboard (`/dashboard`)
-The main hub — displays:
-- Welcome message with user's name and role
-- Stats cards (total members, active projects, pending submissions, completion rate)
-- Pipeline distribution chart (how many members at each stage)
-- Recent activity feed
-- Quick-action buttons (role-dependent)
-
-### 👥 Members (`/dashboard/members`)
-- **Admin view**: Full member list with search, filter by stage/track/cohort, and bulk actions
-- **Member profiles**: Click through to see detailed profile, assigned projects, progress, and badges
-- **Pipeline management**: Admins can promote members through stages
-
-### 📁 Projects (`/dashboard/projects`, `/dashboard/all-projects`)
-- **Create projects**: Title, description, difficulty, track, tech stack, deliverables, deadlines, milestones
-- **Assign projects**: Admins assign projects to individual members or teams via `AssignProjectDialogue`
-- **Track status**: Not Started → In Progress → Submitted → Under Review → Completed/Rejected
-- **Milestones**: JSONB-based milestone tracking within each project
-
-### 👨‍👩‍👧‍👦 Teams (`/dashboard/teams`, `/dashboard/teams/[id]`)
-- **Create teams**: Name + add members via `TeamDialog`
-- **Team detail page**: Shows team members, active projects, and the **Team Tasks** section
-- **Team tasks**: Admins assign granular tasks to individual members within teams
-
-### ✅ My Tasks (`/dashboard/my-tasks`)
-- **Member-only view**: See all assigned tasks grouped by status
-- **Status chips**: Not Started, In Progress, Submitted, Completed, Rejected
-- **Actions**: Mark as "In Progress", submit work (GitHub URL, demo URL, notes)
-- **Admin feedback bubble**: After review, members see the admin's written review on their task card (green for approved, red for rejected)
-
-### 📨 Submissions (`/dashboard/submissions`)
-- **Project Submissions tab**: Lists all pending project submissions with evaluate buttons
-- **Task Submissions tab**: Lists all team task submissions
-  - **Review dialog**: Full submission details + admin review textarea + Approve/Reject buttons
-  - Non-pending submissions can be viewed but not re-reviewed
-
-### 📊 Evaluate (`/dashboard/evaluate/[id]`)
-- Score submissions on **6 criteria** (1–10 scale each):
-  - Code Quality, Architecture, Problem Solving, Communication, Teamwork, Reliability
-- Written feedback field
-- Auto-calculates average score
-
-### 🏅 Achievements (`/dashboard/achievements`)
-- Badge system for gamification
-- Badges awarded for milestones (first project, first eval, streak completions, etc.)
-- XP and level progression
-
-### 📈 Analytics (`/dashboard/analytics`)
-- Charts powered by **Recharts**
-- Pipeline distribution, project completion rates, submission frequency
-- Role-filtered views (admins see org-wide, members see personal)
-
-### 📚 Curriculum (`/dashboard/curriculum`)
-- Module-based learning content organized by track
-- Topics list, duration, and resource links per module
-- Ordered progression (`order_index`)
-
-### 🎓 Cohorts (`/dashboard/cohorts`)
-- Group members into time-bound learning cohorts
-- Each cohort is tied to a track with start/end dates
-- Mentor assignment per cohort
-
-### 🧭 Track Selection (`/dashboard/track`)
-- Visual track picker (Web Dev, AI/ML, Design, Mobile, DevOps)
-- Updates member profile with chosen specialization
-
-### 🚀 Deployments (`/dashboard/deployments`)
-- Track deployed members and their client assignments
-
-### ⚙️ Settings (`/dashboard/settings`)
-- User preferences and profile updates
-
-### 👤 Profile (`/dashboard/profile`)
-- View/edit personal information, bio, skills, social links
-- Experience level and interests
-
-### 🔔 Notifications (Header dropdown)
-- **Real-time** via Supabase Realtime subscriptions
-- Toast alerts for new notifications
-- Mark as read (individual or all)
-- **Delete individual** notifications (hover × button)
-- **Clear all** notifications at once
-- Notification types: project assignments, evaluations, stage changes, task reviews
-
----
-
-## Database Schema
-
-### Tables
-
-| Table | Purpose | Key Columns |
-|-------|---------|-------------|
-| `profiles` | User identity (synced with Supabase Auth) | `id`, `email`, `full_name`, `role`, `avatar_url` |
-| `member_profiles` | Extended member data | `current_stage`, `track`, `cohort_id`, `skills[]`, `level`, `experience_points`, `is_client_ready`, `completed_module_ids[]` |
-| `cohorts` | Learning groups | `name`, `track`, `start_date`, `end_date`, `is_active`, `mentor_ids[]` |
-| `projects` | Assignable projects | `title`, `description`, `difficulty`, `track`, `tech_stack[]`, `deliverables[]`, `milestones` (JSONB) |
-| `teams` | Collaboration groups | `name`, `project_id`, `created_by` |
-| `team_members` | Team membership | `team_id`, `user_id`, `role` (leader/member) |
-| `project_assignments` | Project ↔ Member link | `project_id`, `member_id`, `team_id`, `status`, `milestone_progress` |
-| `submissions` | Work submitted for review | `assignment_id`, `github_url`, `demo_url`, `notes` |
-| `team_tasks` | Granular tasks within teams | `team_id`, `title`, `assigned_to`, `status`, `admin_review`, `reviewed_at` |
-| `team_task_submissions` | Task submission data | `task_id`, `member_id`, `github_url`, `demo_url`, `notes` |
-| `evaluations` | Graded assessments | `submission_id`, `evaluator_id`, 6 criteria scores, `average_score`, `feedback` |
-| `badges` | Achievement definitions | `name`, `description`, `icon`, `criteria` (JSONB) |
-| `notifications` | User alerts | `user_id`, `title`, `message`, `type`, `is_read`, `related_id` |
-| `curriculum_modules` | Learning content | `track`, `title`, `topics[]`, `duration`, `order_index`, `resources[]` |
-
-### Enums
-
-| Enum | Values |
-|------|--------|
-| `user_role` | `member`, `mentor`, `admin` |
-| `pipeline_stage` | `intake`, `training`, `internal_projects`, `evaluation`, `client_ready`, `deployed` |
-| `track_type` | `web_development`, `ai_ml`, `design`, `mobile`, `devops` |
-| `project_status` | `not_started`, `in_progress`, `submitted`, `under_review`, `completed`, `rejected` |
-| `project_difficulty` | `beginner`, `intermediate`, `advanced` |
-| `experience_level` | `beginner`, `intermediate`, `advanced` |
-| `task_status` | `not_started`, `in_progress`, `submitted`, `completed`, `rejected` |
-
----
-
-## Project Structure
-
-```
-impact360-os/
-├── public/                          # Static assets
-├── scripts/                         # SQL migration files
-│   ├── team_tasks_migration.sql
-│   └── team_tasks_add_review_columns.sql
-├── src/
-│   ├── app/
-│   │   ├── (auth)/                  # Auth pages (sign-in, sign-up)
-│   │   ├── (dashboard)/             # Protected dashboard pages
-│   │   │   ├── dashboard/
-│   │   │   │   ├── page.tsx         # Main dashboard
-│   │   │   │   ├── achievements/
-│   │   │   │   ├── all-projects/
-│   │   │   │   ├── analytics/
-│   │   │   │   ├── cohorts/
-│   │   │   │   ├── curriculum/
-│   │   │   │   ├── deployments/
-│   │   │   │   ├── evaluate/
-│   │   │   │   ├── members/
-│   │   │   │   ├── my-tasks/
-│   │   │   │   ├── profile/
-│   │   │   │   ├── projects/
-│   │   │   │   ├── settings/
-│   │   │   │   ├── submissions/
-│   │   │   │   ├── teams/
-│   │   │   │   └── track/
-│   │   │   └── layout.tsx           # Dashboard shell (sidebar + header)
-│   │   ├── globals.css              # Tailwind imports + theme tokens
-│   │   ├── layout.tsx               # Root layout (fonts, metadata)
-│   │   └── page.tsx                 # Landing page (public)
-│   ├── components/
-│   │   ├── admin/                   # Admin-only dialogs
-│   │   │   ├── AssignProjectDialogue.tsx
-│   │   │   ├── AssignTeamTaskDialog.tsx
-│   │   │   ├── CohortDialog.tsx
-│   │   │   ├── ProjectDialog.tsx
-│   │   │   ├── TaskReviewDialog.tsx
-│   │   │   └── TeamDialog.tsx
-│   │   ├── auth/                    # Auth forms & guards
-│   │   ├── charts/                  # Recharts visualizations
-│   │   ├── evaluations/             # Evaluation form components
-│   │   ├── layout/                  # Header & Sidebar
-│   │   ├── notifications/           # NotificationDropdown
-│   │   ├── onboarding/              # OnboardingWizard
-│   │   ├── teams/                   # SubmitTaskDialog + team components
-│   │   └── ui/                      # 18 shadcn/ui primitives
-│   ├── lib/
-│   │   ├── hooks/                   # Custom React hooks
-│   │   │   ├── useAuth.ts           # Auth state & role helpers
-│   │   │   ├── useMembers.ts        # Member CRUD
-│   │   │   ├── useNotifications.ts  # Real-time notifications
-│   │   │   └── useProjects.ts       # Project queries
-│   │   ├── supabase/                # Supabase client setup
-│   │   └── utils/
-│   │       ├── badges.ts            # Badge definitions & logic
-│   │       ├── constants.ts         # Labels, colors, skill lists
-│   │       ├── format.ts            # Date formatting helpers
-│   │       └── notifications.ts     # Notification helpers
-│   └── types/
-│       └── database.types.ts        # Full TypeScript schema (12 tables)
-├── package.json
-├── tsconfig.json
-├── next.config.ts
-└── postcss.config.mjs
-```
-
----
-
-## Environment Variables
-
-Create a `.env.local` file in the project root with:
-
-```env
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-```
-
-These are obtained from your [Supabase Dashboard](https://supabase.com/dashboard) → Project Settings → API.
-
----
-
-## Deployment
-
-### Vercel (Recommended)
-
-1. Push the repo to GitHub
-2. Import the project in [Vercel](https://vercel.com)
-3. Add environment variables (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`)
-4. Deploy — Vercel auto-detects Next.js
-
-### Build Locally
-
-```bash
-npm run build   # Production build
-npm run start   # Start production server
-```
-
----
-
-## SQL Migrations
-
-Run these in **Supabase Dashboard → SQL Editor**, in order:
-
-| # | File | Purpose |
-|---|------|---------|
-| 1 | `scripts/team_tasks_migration.sql` | Creates `team_tasks` + `team_task_submissions` tables with RLS policies |
-| 2 | `scripts/team_tasks_add_review_columns.sql` | Adds `admin_review` and `reviewed_at` columns to `team_tasks` |
-
-> **Note**: Both scripts are idempotent — safe to re-run.
-
----
-
-## Contributing
-
-1. **Fork** the repository
-2. **Create a branch**: `git checkout -b feature/your-feature`
-3. **Code** your changes following existing patterns
-4. **Test** locally with `npm run dev`
-5. **Build check**: `npm run build` must pass
-6. **Pull request** with a clear description
-
-### Code Conventions
-
-- TypeScript strict mode
-- All Supabase queries cast through `as any` to avoid schema cache conflicts
-- Components use shadcn/ui primitives from `@/components/ui/`
-- Hooks live in `@/lib/hooks/`
-- Database types are defined in `@/types/database.types.ts`
-- Role checks use the `useAuth()` hook (`isAdmin`, `isMentor`)
-
----
-
-## License
-
-Private — Virtualvigilant / Impact360 OS
-
----
-
-*Built with ❤️ by the Impact360 team.*
+## Database domains
+
+**Identity and programme design** — `profiles`, `departments`, `internship_programmes`,
+`programme_tracks`, `competencies`, `programme_competencies`
+
+**Recruitment** — `opportunities`, `applications`, `application_documents`,
+`application_reviews`, `interviews`, `interview_scores`, `offers`
+
+**Internship and development** — `placements`, `onboarding_items`, `learning_goals`,
+`internship_check_ins`, `feedback_entries`, `learning_resources`, `programme_events`,
+`event_attendance`
+
+**Work and evidence** — `projects`, `project_members`, `milestones`, `tasks`,
+`task_dependencies`, `task_competencies`, `work_evidence`, `task_comments`
+
+**Performance and operations** — `rubrics`, `rubric_criteria`, `evaluations`,
+`evaluation_scores`, `attendance_records`, `leave_requests`, `intern_documents`,
+`programme_concerns`, `assets`, `asset_assignments`, `system_access_resources`,
+`access_assignments`, `stipend_payments`
+
+**Outcomes and governance** — `completion_requirements`, `internship_outcomes`,
+`certificates`, `alumni_profiles`, `policies`, `policy_acknowledgements`,
+`announcements`, `notifications`, `risk_signals`, `ai_insights`, `audit_logs`,
+`data_retention_policies`, `data_subject_requests`
+
+Three views derive programme metrics from source records so headline numbers stay
+explainable: `intern_operating_summary`, `mentor_capacity`, `programme_health`.
+
+## Type generation
+
+`src/types/database.ts` is generated by `scripts/generate-db-types.py`, which parses
+`supabase/migrations/*.sql`. It emits row/insert/update shapes, enums, and — importantly
+— real `Relationships` entries derived from the foreign keys, so embedded selects like
+`placement:placements(intern:profiles!placements_intern_id_fkey(full_name))` type-check
+against the actual schema rather than falling back to `any`.
+
+Regenerate with `npm run db:types` after any migration. CI fails if the committed file
+is stale.
+
+The generator names foreign keys `<table>_<column>_fkey`, matching what Postgres names
+an inline column constraint. That name is the disambiguation hint the client needs where
+two foreign keys point at the same table — `placements` references `profiles` three
+times, as intern, mentor and supervisor.
+
+## The request path
+
+A dashboard page:
+
+1. `proxy.ts` verifies the JWT with `getUser()`, loads the role, and checks the path
+   against the shared route map. An unmapped `/dashboard/*` path is denied, not allowed.
+2. `(dashboard)/layout.tsx` calls `requireSession()`, which is `cache()`-wrapped so the
+   layout and every server component in the tree share one profile query.
+3. The page calls a `lib/data/*` loader, which returns `{ data, error, schemaMissing }`
+   rather than throwing, so one failing section degrades to a notice instead of taking
+   down the page.
+4. Client components receive the session through `SessionProvider` — no re-fetching.
+
+A write:
+
+1. A client form posts to a server action.
+2. `action()` in `lib/actions/helpers.ts` authenticates, checks a named permission,
+   parses the Zod schema, and returns field errors keyed by name if it fails.
+3. The action re-reads current state from the database and validates the transition
+   against it — never against what the browser claimed the state was.
+4. It writes with an optimistic-concurrency predicate (`.eq('status', previousStatus)`),
+   so a stale tab cannot overwrite a decision made in another session.
+
+## Intelligence rules
+
+- AI may assist; it does not silently select, reject, score finally or discipline a
+  person.
+- Every risk signal includes a stated reason and, where available, a source record.
+- Every AI insight stores its evidence, confidence, model reference and human-review
+  status.
+- Risk signals and model insights are kept as separate lists, not merged into one feed:
+  a rule that fired against a record and a model output awaiting review are different
+  kinds of claim.
+- Sensitive record payloads are not copied into the audit log; the log records actor,
+  action, record and changed fields.
+
+## Data-protection design
+
+- Purpose and versioned consent are recorded with each application, as a notice version
+  plus a timestamp — "they agreed" is not a record.
+- Privacy consent (required) and screening consent (optional) are separate checkboxes.
+  Bundling them would make the second one not freely given.
+- Public applicants cannot write system screening fields; the
+  `protect_application_system_fields` trigger overwrites them, and the schema has no
+  field for them.
+- Roles and account status are privilege-protected on insert *and* update.
+- Anonymous concern reports store no reporter id. Hiding one in the interface while
+  keeping it in the row would make the promise false.
+- Retention rules and data-subject requests are first-class records.
+- Files should use private Supabase Storage buckets with short-lived signed URLs.
+
+## Kenya-specific configuration
+
+The programme record carries an `industrial_attachment_applicable` decision plus
+permission and trainer-registration references. Placements separately name the mentor,
+supervisor and programme manager. Completion requirements and certificates preserve
+evidence of satisfactory completion.
+
+Confirm which intakes fall within the Industrial Training Act framework and review the
+current obligations before production. Do not treat a public-service rule as
+automatically governing a private ITEK programme.
+
+## Deployment sequence
+
+1. Back up and verify the Supabase target.
+2. Apply `supabase/migrations/*.sql` in filename order, then `supabase/seed.sql`.
+3. Promote the initial administrator from the SQL editor (see `supabase/README.md`).
+4. Configure private Storage buckets and file policies.
+5. Publish the privacy notice and internship handbook as policy records, and set
+   `PRIVACY_NOTICE_VERSION` in `src/app/opportunities/[slug]/page.tsx` to match.
+6. Create the first programme, tracks, opportunities, rubric and completion checklist.
+7. Assign recruitment and programme roles via `public.assign_role`.
+8. Run a small test cohort and review permissions, alerts and retention behaviour before
+   scaling.
+
+## Known gaps
+
+Worth being explicit about what is not built:
+
+- **File upload.** `work_evidence` and `intern_documents` carry a `storage_path`, but
+  there is no upload UI yet. Evidence is captured as links. Doing this properly needs
+  private buckets and signed URLs.
+- **Rubric authoring and evaluation scoring UI.** `recordEvaluation` and `getRubric`
+  exist and are typed; the scoring form is not built, so evaluations currently arrive
+  through the API rather than the interface.
+- **Interview scheduling and offer issuing UI.** `scheduleInterview` exists; the
+  selection page is read-only.
+- **Placement creation.** Turning a `selected` application into a placement is
+  deliberately not automated — it is the point where a human commits ITEK to someone.
+  It currently happens in SQL.
+- **Rate limiting is per-instance.** `lib/api/guard.ts` holds counters in memory, which
+  bounds abuse rather than eliminating it across a multi-instance deployment.

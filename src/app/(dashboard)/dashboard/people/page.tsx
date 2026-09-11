@@ -64,35 +64,19 @@ export default async function InternsPage({
                             <CardContent className="p-0">
                                 <ul className="divide-y">
                                     {data.rows.map((intern) => (
-                                        <li key={intern.placement_id}>
-                                            <Link
-                                                href={`/dashboard/people/${intern.placement_id}`}
-                                                className="flex flex-col gap-4 p-4 transition-colors hover:bg-muted/40 sm:flex-row sm:items-center"
-                                            >
-                                                <div className="min-w-0 flex-1">
-                                                    <div className="flex items-center gap-2">
-                                                        <p className="truncate text-sm font-semibold">{intern.full_name}</p>
-                                                        <StatusBadge status={intern.status} />
-                                                    </div>
-                                                    <p className="mt-1 truncate text-xs text-muted-foreground">
-                                                        {intern.programme_name || 'Programme pending'} ·{' '}
-                                                        {intern.track_name || 'Track pending'} ·{' '}
-                                                        {intern.current_phase || 'Phase pending'}
-                                                    </p>
-                                                    <div className="mt-2.5 max-w-xs">
-                                                        <Progress value={intern.learning_progress} className="h-1.5" />
-                                                    </div>
+                                        <li key={intern.placement_id || intern.intern_id}>
+                                            {intern.placement_id ? (
+                                                <Link
+                                                    href={`/dashboard/people/${intern.placement_id}`}
+                                                    className="flex flex-col gap-4 p-4 transition-colors hover:bg-muted/40 sm:flex-row sm:items-center"
+                                                >
+                                                    <InternRow intern={intern} />
+                                                </Link>
+                                            ) : (
+                                                <div className="flex flex-col gap-4 p-4 transition-colors hover:bg-muted/40 sm:flex-row sm:items-center">
+                                                    <InternRow intern={intern} />
                                                 </div>
-
-                                                <dl className="grid shrink-0 grid-cols-4 gap-5 text-right sm:gap-7">
-                                                    <Figure label="Learning" value={formatPercent(intern.learning_progress)} />
-                                                    <Figure label="Attendance" value={formatPercent(intern.attendance_rate)} />
-                                                    <Figure label="Score" value={formatScore(intern.performance_score, 5, '—')} />
-                                                    <Figure label="Open" value={intern.open_tasks} />
-                                                </dl>
-
-                                                <StatusBadge status={intern.risk_level} className="shrink-0" />
-                                            </Link>
+                                            )}
                                         </li>
                                     ))}
                                 </ul>
@@ -114,3 +98,34 @@ function Figure({ label, value }: { label: string; value: string | number }) {
         </div>
     );
 }
+
+function InternRow({ intern }: { intern: any }) {
+    return (
+        <>
+            <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                    <p className="truncate text-sm font-semibold">{intern.full_name}</p>
+                    <StatusBadge status={intern.status} />
+                </div>
+                <p className="mt-1 truncate text-xs text-muted-foreground">
+                    {intern.programme_name || 'Programme pending'} ·{' '}
+                    {intern.track_name || 'Track pending'} ·{' '}
+                    {intern.current_phase || 'Phase pending'}
+                </p>
+                <div className="mt-2.5 max-w-xs">
+                    <Progress value={intern.learning_progress} className="h-1.5" />
+                </div>
+            </div>
+
+            <dl className="grid shrink-0 grid-cols-4 gap-5 text-right sm:gap-7">
+                <Figure label="Learning" value={formatPercent(intern.learning_progress)} />
+                <Figure label="Attendance" value={formatPercent(intern.attendance_rate)} />
+                <Figure label="Score" value={formatScore(intern.performance_score, 5, '—')} />
+                <Figure label="Open" value={intern.open_tasks} />
+            </dl>
+
+            <StatusBadge status={intern.risk_level} className="shrink-0" />
+        </>
+    );
+}
+

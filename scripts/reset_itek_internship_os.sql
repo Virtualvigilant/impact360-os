@@ -1247,8 +1247,9 @@ with (security_invoker = true)
 as
 select
   p.id as placement_id,
-  p.intern_id,
+  pr.id as intern_id,
   pr.full_name,
+  pr.email,
   ip.name as programme_name,
   pt.name as track_name,
   p.status,
@@ -1262,10 +1263,11 @@ select
   coalesce((select count(*) from public.tasks t where t.placement_id = p.id and t.due_at < now() and t.status not in ('completed','approved','cancelled')), 0) as overdue_tasks,
   coalesce((select round(avg(g.progress)) from public.learning_goals g where g.placement_id = p.id), 0) as learning_progress,
   coalesce((select round(100.0 * count(*) filter (where a.status in ('present','remote','late')) / nullif(count(*), 0)) from public.attendance_records a where a.placement_id = p.id), 0) as attendance_rate
-from public.placements p
-join public.profiles pr on pr.id = p.intern_id
-join public.internship_programmes ip on ip.id = p.programme_id
-left join public.programme_tracks pt on pt.id = p.track_id;
+from public.profiles pr
+left join public.placements p on p.intern_id = pr.id
+left join public.internship_programmes ip on ip.id = p.programme_id
+left join public.programme_tracks pt on pt.id = p.track_id
+where pr.role = 'intern';
 
 create view public.mentor_capacity
 with (security_invoker = true)

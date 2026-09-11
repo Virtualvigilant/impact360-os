@@ -54,6 +54,7 @@ export default async function GovernancePage() {
                                                 </p>
                                                 <p className="truncate text-xs text-muted-foreground">
                                                     {person.email}
+                                                    {person.created_at ? ` · ${person.role === 'intern' ? 'enrolled' : 'joined'} ${formatDate(person.created_at)}` : ''}
                                                     {person.last_seen_at ? ` · seen ${formatRelativeTime(person.last_seen_at)}` : ''}
                                                 </p>
                                             </div>

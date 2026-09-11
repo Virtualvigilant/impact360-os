@@ -45,7 +45,7 @@ export interface GovernanceBoard {
     dataRequests: Tables<'data_subject_requests'>[];
     retention: Tables<'data_retention_policies'>[];
     audits: Tables<'audit_logs'>[];
-    staff: Pick<Tables<'profiles'>, 'id' | 'full_name' | 'email' | 'role' | 'is_active' | 'last_seen_at'>[];
+    staff: Pick<Tables<'profiles'>, 'id' | 'full_name' | 'email' | 'role' | 'is_active' | 'last_seen_at' | 'created_at'>[];
 }
 
 const EMPTY_GOVERNANCE: GovernanceBoard = {
@@ -66,7 +66,7 @@ export async function getGovernanceBoard(): Promise<Loaded<GovernanceBoard>> {
             supabase.from('audit_logs').select('*').order('occurred_at', { ascending: false }).limit(100),
             supabase
                 .from('profiles')
-                .select('id, full_name, email, role, is_active, last_seen_at')
+                .select('id, full_name, email, role, is_active, last_seen_at, created_at')
                 .order('role')
                 .order('full_name')
                 .limit(200),

@@ -2802,6 +2802,7 @@ export type Database = {
           objective: string;
           project_lead_id: string | null;
           repository_url: string | null;
+          deployed_url: string | null;
           start_date: string | null;
           target_end_date: string | null;
           status: Database['public']['Enums']['project_status'];
@@ -2823,6 +2824,7 @@ export type Database = {
           objective: string;
           project_lead_id?: string | null;
           repository_url?: string | null;
+          deployed_url?: string | null;
           start_date?: string | null;
           target_end_date?: string | null;
           status?: Database['public']['Enums']['project_status'];
@@ -2844,6 +2846,7 @@ export type Database = {
           objective?: string;
           project_lead_id?: string | null;
           repository_url?: string | null;
+          deployed_url?: string | null;
           start_date?: string | null;
           target_end_date?: string | null;
           status?: Database['public']['Enums']['project_status'];

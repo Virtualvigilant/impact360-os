@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { FolderKanban } from 'lucide-react';
+import { FolderKanban, Code2, Globe } from 'lucide-react';
 import { can, ROLE_GROUPS } from '@/lib/auth/roles';
 import { requireRole } from '@/lib/auth/session';
 import { listOpenProgrammes } from '@/lib/data/programmes';
@@ -94,6 +94,23 @@ export default async function ProjectsPage({
                                                 <p className="mt-2 text-xs text-muted-foreground">
                                                     Target {formatDate(project.target_end_date)}
                                                 </p>
+                                            )}
+
+                                            {(project.repository_url || project.deployed_url) && (
+                                                <div className="mt-3 flex flex-wrap items-center gap-2">
+                                                    {project.repository_url && (
+                                                        <span className="inline-flex items-center gap-1 rounded bg-muted px-2 py-0.5 text-[11px] font-medium text-foreground/80">
+                                                            <Code2 className="h-3 w-3 text-muted-foreground" />
+                                                            Repo
+                                                        </span>
+                                                    )}
+                                                    {project.deployed_url && (
+                                                        <span className="inline-flex items-center gap-1 rounded bg-muted px-2 py-0.5 text-[11px] font-medium text-foreground/80">
+                                                            <Globe className="h-3 w-3 text-emerald-500" />
+                                                            Live site
+                                                        </span>
+                                                    )}
+                                                </div>
                                             )}
                                         </Link>
                                     </CardContent>

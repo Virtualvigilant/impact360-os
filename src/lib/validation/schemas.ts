@@ -292,6 +292,14 @@ export const removeProjectMemberSchema = z.object({
     placement_id: uuid,
 });
 
+export const updateProjectProgressSchema = z.object({
+    project_id: uuid,
+    status: z.enum(['planned', 'active', 'on_hold', 'completed', 'cancelled']),
+    progress: z.coerce.number().int().min(0, 'Progress must be at least 0%').max(100, 'Progress cannot exceed 100%').default(0),
+    repository_url: optional(z.string().trim().url('Enter a full URL including https://')),
+    deployed_url: optional(z.string().trim().url('Enter a full URL including https://')),
+});
+
 
 // ─── Development ─────────────────────────────────────────────────────────────
 
@@ -429,6 +437,7 @@ export type TaskInput = z.infer<typeof taskSchema>;
 export type ProjectInput = z.infer<typeof projectSchema>;
 export type AssignProjectMemberInput = z.infer<typeof assignProjectMemberSchema>;
 export type RemoveProjectMemberInput = z.infer<typeof removeProjectMemberSchema>;
+export type UpdateProjectProgressInput = z.infer<typeof updateProjectProgressSchema>;
 export type CheckInInput = z.infer<typeof checkInSchema>;
 export type EvaluationInput = z.infer<typeof evaluationSchema>;
 

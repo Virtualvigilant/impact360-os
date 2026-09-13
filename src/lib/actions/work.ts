@@ -10,6 +10,7 @@ import {
     removeProjectMemberSchema,
     taskSchema,
     taskTransitionSchema,
+    updateProjectProgressSchema,
 } from '@/lib/validation/schemas';
 import { can } from '@/lib/auth/roles';
 import { action } from './helpers';
@@ -228,6 +229,59 @@ export async function removeProjectMember(input: unknown) {
             .eq('project_id', data.project_id)
             .eq('placement_id', data.placement_id);
         if (error) throw error;
+        revalidatePath(`/dashboard/projects/${data.project_id}`);
+        revalidatePath('/dashboard/projects');
+        revalidatePath('/dashboard/work');
+        return true;
+    });
+}
+
+export async function updateProjectProgress(input: unknown) {
+    return action({ schema: updateProjectProgressSchema, input }, async (data, session) => {
+        const supabase = await createServerSupabase();
+
+        // 1. Authorization: check if user is staff or an assigned project team member
+        const isStaff = can(session.role, 'project:manage');
+        if (!isStaff) {
+            const { data: memberRecord, error: memberError } = await supabase
+                .from('project_members')
+                .select('placement_id, placement:placements!inner(intern_id)')
+                .eq('project_id', data.project_id)
+                .is('left_at', null);
+
+            if (memberError) throw memberError;
+
+            const isMember = (memberRecord ?? []).some(
+                (m) => (m.placement as { intern_id?: string } | null)?.intern_id === session.userId,
+            );
+
+            if (!isMember) {
+                throw new Error('Only project team members and supervisors can update project progress.');
+            }
+        }
+
+        // 2. Adjust progress percentage based on status
+        let progress = data.progress;
+        if (data.status === 'completed' && progress < 100) {
+            progress = 100;
+        } else if (data.status === 'active' && progress === 0) {
+            progress = 10;
+        }
+
+        // 3. Update the project
+        const { error } = await supabase
+            .from('projects')
+            .update({
+                status: data.status,
+                progress,
+                repository_url: data.repository_url?.trim() || null,
+                deployed_url: data.deployed_url?.trim() || null,
+                updated_at: new Date().toISOString(),
+            })
+            .eq('id', data.project_id);
+
+        if (error) throw error;
+
         revalidatePath(`/dashboard/projects/${data.project_id}`);
         revalidatePath('/dashboard/projects');
         revalidatePath('/dashboard/work');

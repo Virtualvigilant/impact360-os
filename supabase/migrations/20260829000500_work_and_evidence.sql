@@ -14,6 +14,7 @@ create table public.projects (
   objective text not null,
   project_lead_id uuid references public.profiles(id) on delete set null,
   repository_url text,
+  deployed_url text,
   start_date date,
   target_end_date date,
   status public.project_status not null default 'planned',

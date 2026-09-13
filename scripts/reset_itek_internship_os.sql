@@ -494,6 +494,7 @@ create table public.projects (
   objective text not null,
   project_lead_id uuid references public.profiles(id) on delete set null,
   repository_url text,
+  deployed_url text,
   start_date date,
   target_end_date date,
   status public.project_status not null default 'planned',
@@ -1402,6 +1403,15 @@ create policy project_members_select on public.project_members for select using 
 create policy milestones_select on public.milestones for select using (
   public.is_programme_staff()
   or public.is_project_member(milestones.project_id, auth.uid())
+);
+create policy projects_member_update on public.projects for update
+using (
+  public.is_project_member(projects.id, auth.uid())
+  or public.is_programme_staff()
+)
+with check (
+  public.is_project_member(projects.id, auth.uid())
+  or public.is_programme_staff()
 );
 create policy tasks_participant_read on public.tasks for select using (exists (
   select 1 from public.placements p where p.id = tasks.placement_id

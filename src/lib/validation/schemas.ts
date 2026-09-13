@@ -101,6 +101,33 @@ export const opportunitySchema = z
         path: ['closes_at'],
     });
 
+export const updateOpportunityStatusSchema = z.object({
+    id: uuid,
+    status: z.enum(['draft', 'published', 'closed', 'filled', 'archived']),
+});
+
+export const updateOpportunitySchema = z
+    .object({
+        id: uuid,
+        programme_id: uuid,
+        track_id: optional(uuid),
+        title: requiredText('Title', 160),
+        summary: requiredText('Summary', 1000),
+        responsibilities: lines(20),
+        qualifications: lines(20),
+        expected_competencies: lines(20),
+        work_arrangement: z.enum(['onsite', 'hybrid', 'remote']),
+        location: optional(text(160)),
+        slots: z.coerce.number().int().min(1).max(500),
+        opens_at: optional(isoDateTime),
+        closes_at: optional(isoDateTime),
+        status: z.enum(['draft', 'published', 'closed', 'filled', 'archived']).default('draft'),
+    })
+    .refine((value) => !value.opens_at || !value.closes_at || value.closes_at > value.opens_at, {
+        message: 'Applications must close after they open',
+        path: ['closes_at'],
+    });
+
 // ─── Recruitment ─────────────────────────────────────────────────────────────
 
 /**
@@ -377,6 +404,8 @@ export type ProgrammeInput = z.infer<typeof programmeSchema>;
 export type UpdateProgrammeStatusInput = z.infer<typeof updateProgrammeStatusSchema>;
 export type UpdateProgrammeInput = z.infer<typeof updateProgrammeSchema>;
 export type OpportunityInput = z.infer<typeof opportunitySchema>;
+export type UpdateOpportunityStatusInput = z.infer<typeof updateOpportunityStatusSchema>;
+export type UpdateOpportunityInput = z.infer<typeof updateOpportunitySchema>;
 export type ApplicationInput = z.infer<typeof applicationSchema>;
 export type TaskInput = z.infer<typeof taskSchema>;
 export type CheckInInput = z.infer<typeof checkInSchema>;

@@ -9,6 +9,8 @@ import {
     interviewSchema,
     opportunitySchema,
     programmeSchema,
+    updateOpportunitySchema,
+    updateOpportunityStatusSchema,
     updateProgrammeSchema,
     updateProgrammeStatusSchema,
 } from '@/lib/validation/schemas';
@@ -110,6 +112,39 @@ export async function publishOpportunity(opportunityId: string, publish: boolean
         revalidatePath('/dashboard/opportunities');
         revalidatePath('/opportunities');
         return publish;
+    });
+}
+
+export async function updateOpportunity(input: unknown) {
+    return action({ permission: 'opportunity:manage', schema: updateOpportunitySchema, input }, async (data) => {
+        const supabase = await createServerSupabase();
+        const { id, ...updates } = data;
+        const { error } = await supabase
+            .from('opportunities')
+            .update({ ...updates, updated_at: new Date().toISOString() })
+            .eq('id', id);
+        if (error) throw error;
+        revalidatePath('/dashboard/opportunities');
+        revalidatePath('/opportunities');
+        return id;
+    });
+}
+
+export async function updateOpportunityStatus(input: unknown) {
+    return action({ permission: 'opportunity:manage', schema: updateOpportunityStatusSchema, input }, async (data) => {
+        const supabase = await createServerSupabase();
+        const { error } = await supabase
+            .from('opportunities')
+            .update({
+                status: data.status,
+                published_at: data.status === 'published' ? new Date().toISOString() : null,
+                updated_at: new Date().toISOString(),
+            })
+            .eq('id', data.id);
+        if (error) throw error;
+        revalidatePath('/dashboard/opportunities');
+        revalidatePath('/opportunities');
+        return data.status;
     });
 }
 

@@ -10,6 +10,7 @@ import { Pagination } from '@/components/primitives/pagination';
 import { StatusBadge } from '@/components/primitives/status-badge';
 import { EmptyState, Section } from '@/components/primitives/states';
 import { CreateOpportunityDialog } from '@/components/programmes/create-opportunity-dialog';
+import { OpportunityActions } from '@/components/programmes/opportunity-actions';
 import { PublishToggle } from '@/components/programmes/publish-toggle';
 import { Card, CardContent } from '@/components/ui/card';
 
@@ -105,6 +106,7 @@ export default async function OpportunitiesPage({
                                                 opportunityId={opportunity.id}
                                                 published={opportunity.status === 'published'}
                                             />
+                                            <OpportunityActions opportunity={opportunity} programmes={programmes} />
                                         </div>
                                     </div>
                                 ))}

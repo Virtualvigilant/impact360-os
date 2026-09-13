@@ -1,8 +1,9 @@
+import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { GraduationCap } from 'lucide-react';
+import { Code2, ExternalLink, FolderKanban, Globe, GraduationCap } from 'lucide-react';
 import { ROLE_GROUPS } from '@/lib/auth/roles';
 import { requireRole } from '@/lib/auth/session';
-import { getInternRecord } from '@/lib/data/interns';
+import { getInternRecord, type InternProject } from '@/lib/data/interns';
 import { attendanceRate } from '@/lib/data/operations';
 import { formatDate, formatDateRange, formatHours, formatPercent, formatRelativeTime, formatScore } from '@/lib/utils/format';
 import { PageHeader } from '@/components/primitives/page-header';
@@ -43,7 +44,7 @@ export default async function InternRecordPage({ params }: { params: Promise<{ p
 }
 
 function Record({ data }: { data: NonNullable<Awaited<ReturnType<typeof getInternRecord>>['data']> }) {
-    const { summary, placement, goals, tasks, checkIns, feedback, evaluations, attendance, documents, risks } = data;
+    const { summary, placement, goals, tasks, projects, checkIns, feedback, evaluations, attendance, documents, risks } = data;
 
     const openTasks = tasks.filter((task) => !['completed', 'cancelled'].includes(task.status));
     const rate = attendanceRate(attendance);
@@ -103,8 +104,9 @@ function Record({ data }: { data: NonNullable<Awaited<ReturnType<typeof getInter
                 </Card>
             )}
 
-            <Tabs defaultValue="work">
+            <Tabs defaultValue="projects">
                 <TabsList className="flex-wrap">
+                    <TabsTrigger value="projects">Projects</TabsTrigger>
                     <TabsTrigger value="work">Work</TabsTrigger>
                     <TabsTrigger value="development">Development</TabsTrigger>
                     <TabsTrigger value="checkins">Check-ins</TabsTrigger>
@@ -112,6 +114,45 @@ function Record({ data }: { data: NonNullable<Awaited<ReturnType<typeof getInter
                     <TabsTrigger value="operations">Operations</TabsTrigger>
                 </TabsList>
 
+                {/* ── Projects ─────────────────────────────────────────── */}
+                <TabsContent value="projects" className="mt-6 space-y-6">
+                    {projects.length === 0 ? (
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Assigned projects</CardTitle>
+                                <CardDescription>
+                                    Projects this intern has been assigned to as a team member.
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <Muted>No projects assigned yet.</Muted>
+                            </CardContent>
+                        </Card>
+                    ) : (
+                        <>
+                            <div className="flex items-center gap-3">
+                                <FolderKanban className="h-5 w-5 text-primary" />
+                                <div>
+                                    <h3 className="text-sm font-semibold">
+                                        {projects.length} assigned project{projects.length !== 1 ? 's' : ''}
+                                    </h3>
+                                    <p className="text-xs text-muted-foreground">
+                                        {projects.filter((p) => p.project.status === 'active').length} active ·{' '}
+                                        {projects.filter((p) => p.project.status === 'completed').length} completed
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="grid gap-4 md:grid-cols-2">
+                                {projects.map((p) => (
+                                    <ProjectCard key={p.project.id} data={p} tasks={tasks} />
+                                ))}
+                            </div>
+                        </>
+                    )}
+                </TabsContent>
+
+                {/* ── Work / Tasks ──────────────────────────────────────── */}
                 <TabsContent value="work" className="mt-6">
                     <Card>
                         <CardHeader>
@@ -141,6 +182,7 @@ function Record({ data }: { data: NonNullable<Awaited<ReturnType<typeof getInter
                     </Card>
                 </TabsContent>
 
+                {/* ── Development ──────────────────────────────────────── */}
                 <TabsContent value="development" className="mt-6 space-y-6">
                     <Card>
                         <CardHeader>
@@ -194,6 +236,7 @@ function Record({ data }: { data: NonNullable<Awaited<ReturnType<typeof getInter
                     </Card>
                 </TabsContent>
 
+                {/* ── Check-ins ────────────────────────────────────────── */}
                 <TabsContent value="checkins" className="mt-6">
                     <Card>
                         <CardHeader>
@@ -233,6 +276,7 @@ function Record({ data }: { data: NonNullable<Awaited<ReturnType<typeof getInter
                     </Card>
                 </TabsContent>
 
+                {/* ── Performance ──────────────────────────────────────── */}
                 <TabsContent value="performance" className="mt-6">
                     <Card>
                         <CardHeader>
@@ -269,6 +313,7 @@ function Record({ data }: { data: NonNullable<Awaited<ReturnType<typeof getInter
                     </Card>
                 </TabsContent>
 
+                {/* ── Operations ───────────────────────────────────────── */}
                 <TabsContent value="operations" className="mt-6 space-y-6">
                     <Card>
                         <CardHeader>
@@ -315,6 +360,126 @@ function Record({ data }: { data: NonNullable<Awaited<ReturnType<typeof getInter
         </>
     );
 }
+
+/* ── Project Card Component ────────────────────────────────────────────── */
+
+function ProjectCard({
+    data: p,
+    tasks,
+}: {
+    data: InternProject;
+    tasks: { id: string; project_id: string | null; title: string; status: string; due_at: string | null; task_number: string }[];
+}) {
+    const projectTasks = tasks.filter((t) => t.project_id === p.project.id);
+
+    return (
+        <Card className="transition-colors hover:border-primary/40">
+            <CardContent className="p-5">
+                <Link href={`/dashboard/projects/${p.project.id}`} className="block">
+                    <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                            <p className="truncate text-sm font-semibold">{p.project.name}</p>
+                            <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                                {p.project.code} · {p.project.programme?.name ?? 'Independent'}
+                            </p>
+                        </div>
+                        <StatusBadge status={p.project.status} />
+                    </div>
+                </Link>
+
+                {/* Intern's role on this project */}
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <Badge variant="secondary" className="text-[11px]">
+                        {p.role_title ?? 'Contributor'}
+                    </Badge>
+                    {p.allocation_percent && (
+                        <Badge variant="outline" className="text-[11px]">
+                            {p.allocation_percent}% allocated
+                        </Badge>
+                    )}
+                    {p.left_at && (
+                        <Badge variant="destructive" className="text-[11px]">
+                            Left {formatDate(p.left_at)}
+                        </Badge>
+                    )}
+                </div>
+
+                {/* Progress bar */}
+                <div className="mt-3 flex items-center gap-3">
+                    <Progress value={p.project.progress} className="h-1.5 flex-1" />
+                    <span className="w-10 shrink-0 text-right text-xs tabular-nums text-muted-foreground">
+                        {p.project.progress}%
+                    </span>
+                </div>
+
+                {/* Task summary */}
+                <div className="mt-3 flex items-center gap-4 text-xs text-muted-foreground">
+                    <span>{p.tasks_total} task{p.tasks_total !== 1 ? 's' : ''}</span>
+                    <span>{p.tasks_open} open</span>
+                    {p.project.target_end_date && (
+                        <span>Target {formatDate(p.project.target_end_date)}</span>
+                    )}
+                </div>
+
+                {/* Deliverables links */}
+                {(p.project.repository_url || p.project.deployed_url) && (
+                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                        {p.project.repository_url && (
+                            <a
+                                href={p.project.repository_url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-1 rounded bg-muted px-2 py-0.5 text-[11px] font-medium text-foreground/80 transition-colors hover:bg-muted/80"
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                <Code2 className="h-3 w-3 text-muted-foreground" />
+                                Repo
+                                <ExternalLink className="h-2.5 w-2.5 text-muted-foreground/60" />
+                            </a>
+                        )}
+                        {p.project.deployed_url && (
+                            <a
+                                href={p.project.deployed_url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-1 rounded bg-muted px-2 py-0.5 text-[11px] font-medium text-foreground/80 transition-colors hover:bg-muted/80"
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                <Globe className="h-3 w-3 text-emerald-500" />
+                                Live site
+                                <ExternalLink className="h-2.5 w-2.5 text-muted-foreground/60" />
+                            </a>
+                        )}
+                    </div>
+                )}
+
+                {/* Recent tasks on this project */}
+                {projectTasks.length > 0 && (
+                    <div className="mt-4 border-t pt-3">
+                        <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                            Tasks on this project
+                        </p>
+                        <ul className="space-y-1.5">
+                            {projectTasks.slice(0, 5).map((task) => (
+                                <li key={task.id} className="flex items-center justify-between gap-2">
+                                    <p className="truncate text-xs">{task.title}</p>
+                                    <StatusBadge status={task.status} />
+                                </li>
+                            ))}
+                            {projectTasks.length > 5 && (
+                                <li className="text-xs text-muted-foreground">
+                                    +{projectTasks.length - 5} more task{projectTasks.length - 5 !== 1 ? 's' : ''}
+                                </li>
+                            )}
+                        </ul>
+                    </div>
+                )}
+            </CardContent>
+        </Card>
+    );
+}
+
+/* ── Shared helpers ────────────────────────────────────────────────────── */
 
 function Field({ label, value }: { label: string; value: string | null | undefined }) {
     return (

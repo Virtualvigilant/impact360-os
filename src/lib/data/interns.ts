@@ -2,6 +2,7 @@ import 'server-only';
 
 import { createServerSupabase } from '@/lib/supabase/server';
 import type { Tables, Views } from '@/types/database';
+import type { ProjectRow } from './work';
 import { guard, pageBounds, sanitizeSearch, toPage, unwrap, type Loaded, type Page, type PageRequest } from './query';
 
 export type InternSummary = Views<'intern_operating_summary'>;
@@ -49,11 +50,23 @@ export async function listInterns(filters: InternFilters = {}): Promise<Loaded<P
     });
 }
 
+/** A project the intern is assigned to, with their membership metadata. */
+export interface InternProject {
+    project: ProjectRow;
+    role_title: string | null;
+    allocation_percent: number | null;
+    joined_at: string;
+    left_at: string | null;
+    tasks_total: number;
+    tasks_open: number;
+}
+
 export interface InternRecord {
     summary: InternSummary;
     placement: Tables<'placements'> | null;
     goals: Tables<'learning_goals'>[];
     tasks: Tables<'tasks'>[];
+    projects: InternProject[];
     checkIns: Tables<'internship_check_ins'>[];
     feedback: Tables<'feedback_entries'>[];
     evaluations: Tables<'evaluations'>[];
@@ -75,11 +88,17 @@ export async function getInternRecord(placementId: string): Promise<Loaded<Inter
         if (summaryResult.error) throw summaryResult.error;
         if (!summaryResult.data) return null;
 
-        const [placement, goals, tasks, checkIns, feedback, evaluations, attendance, documents, risks] =
+        const [placement, goals, tasks, projectMembers, checkIns, feedback, evaluations, attendance, documents, risks] =
             await Promise.all([
                 supabase.from('placements').select('*').eq('id', placementId).maybeSingle(),
                 supabase.from('learning_goals').select('*').eq('placement_id', placementId).order('target_date'),
                 supabase.from('tasks').select('*').eq('placement_id', placementId).order('due_at').limit(50),
+                supabase
+                    .from('project_members')
+                    .select(
+                        '*, project:projects(*, programme:internship_programmes(id, name, cohort_label), lead:profiles!projects_project_lead_id_fkey(id, full_name, avatar_url))',
+                    )
+                    .eq('placement_id', placementId),
                 supabase.from('internship_check_ins').select('*').eq('placement_id', placementId).order('period_end', { ascending: false }).limit(12),
                 supabase.from('feedback_entries').select('*').eq('placement_id', placementId).order('created_at', { ascending: false }).limit(20),
                 supabase.from('evaluations').select('*').eq('placement_id', placementId).order('created_at', { ascending: false }),
@@ -88,11 +107,30 @@ export async function getInternRecord(placementId: string): Promise<Loaded<Inter
                 supabase.from('risk_signals').select('*').eq('placement_id', placementId).is('resolved_at', null).order('detected_at', { ascending: false }),
             ]);
 
+        // Assemble project data with per-project task counts
+        const allTasks = unwrap(tasks) ?? [];
+        const memberRows = unwrap(projectMembers) ?? [];
+        const projects: InternProject[] = memberRows
+            .filter((m: any) => m.project)
+            .map((m: any) => {
+                const projectTasks = allTasks.filter((t) => t.project_id === m.project.id);
+                return {
+                    project: m.project as ProjectRow,
+                    role_title: m.role_title,
+                    allocation_percent: m.allocation_percent,
+                    joined_at: m.joined_at,
+                    left_at: m.left_at,
+                    tasks_total: projectTasks.length,
+                    tasks_open: projectTasks.filter((t) => !['completed', 'cancelled'].includes(t.status)).length,
+                };
+            });
+
         return {
             summary: summaryResult.data,
             placement: unwrap(placement),
             goals: unwrap(goals) ?? [],
-            tasks: unwrap(tasks) ?? [],
+            tasks: allTasks,
+            projects,
             checkIns: unwrap(checkIns) ?? [],
             feedback: unwrap(feedback) ?? [],
             evaluations: unwrap(evaluations) ?? [],

@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Code2, ExternalLink, FolderKanban, Globe } from 'lucide-react';
 import { can, ROLE_GROUPS } from '@/lib/auth/roles';
@@ -129,9 +130,18 @@ export default async function ProjectPage({ params }: { params: Promise<{ projec
                                                     className="flex items-center justify-between gap-4 py-3 first:pt-0 last:pb-0"
                                                 >
                                                     <div className="min-w-0">
-                                                        <p className="truncate text-sm font-medium">
-                                                            {member.placement?.intern?.full_name ?? 'Team member'}
-                                                        </p>
+                                                        {canManage ? (
+                                                            <Link
+                                                                href={`/dashboard/people/${member.placement_id}`}
+                                                                className="truncate text-sm font-medium text-primary hover:underline"
+                                                            >
+                                                                {member.placement?.intern?.full_name ?? 'Team member'}
+                                                            </Link>
+                                                        ) : (
+                                                            <p className="truncate text-sm font-medium">
+                                                                {member.placement?.intern?.full_name ?? 'Team member'}
+                                                            </p>
+                                                        )}
                                                         <p className="text-xs text-muted-foreground">
                                                             {member.role_title ?? 'Contributor'}
                                                             {member.allocation_percent

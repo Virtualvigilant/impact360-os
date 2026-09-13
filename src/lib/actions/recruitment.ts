@@ -9,6 +9,8 @@ import {
     interviewSchema,
     opportunitySchema,
     programmeSchema,
+    updateProgrammeSchema,
+    updateProgrammeStatusSchema,
 } from '@/lib/validation/schemas';
 import { action, simpleAction } from './helpers';
 
@@ -23,6 +25,33 @@ export async function createProgramme(input: unknown) {
         if (error) throw error;
         revalidatePath('/dashboard/programmes');
         return programme.id;
+    });
+}
+
+export async function updateProgramme(input: unknown) {
+    return action({ permission: 'programme:edit', schema: updateProgrammeSchema, input }, async (data) => {
+        const supabase = await createServerSupabase();
+        const { id, ...updates } = data;
+        const { error } = await supabase
+            .from('internship_programmes')
+            .update({ ...updates, updated_at: new Date().toISOString() })
+            .eq('id', id);
+        if (error) throw error;
+        revalidatePath('/dashboard/programmes');
+        return id;
+    });
+}
+
+export async function updateProgrammeStatus(input: unknown) {
+    return action({ permission: 'programme:edit', schema: updateProgrammeStatusSchema, input }, async (data) => {
+        const supabase = await createServerSupabase();
+        const { error } = await supabase
+            .from('internship_programmes')
+            .update({ status: data.status, updated_at: new Date().toISOString() })
+            .eq('id', data.id);
+        if (error) throw error;
+        revalidatePath('/dashboard/programmes');
+        return data.status;
     });
 }
 

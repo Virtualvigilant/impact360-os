@@ -57,6 +57,29 @@ export const programmeSchema = z
         path: ['end_date'],
     });
 
+export const updateProgrammeStatusSchema = z.object({
+    id: uuid,
+    status: z.enum(['draft', 'planned', 'open', 'active', 'paused', 'completed', 'archived']),
+});
+
+export const updateProgrammeSchema = z
+    .object({
+        id: uuid,
+        name: requiredText('Programme name', 160),
+        cohort_label: requiredText('Cohort label', 60),
+        description: optional(text(2000)),
+        start_date: isoDate,
+        end_date: isoDate,
+        slots: z.coerce.number().int().min(1, 'At least one slot').max(1000),
+        expected_hours_per_week: z.coerce.number().int().min(1).max(60),
+        work_arrangement: z.enum(['onsite', 'hybrid', 'remote']),
+        status: z.enum(['draft', 'planned', 'open', 'active', 'paused', 'completed', 'archived']).default('draft'),
+    })
+    .refine((value) => value.end_date > value.start_date, {
+        message: 'The programme must end after it starts',
+        path: ['end_date'],
+    });
+
 export const opportunitySchema = z
     .object({
         programme_id: uuid,
@@ -351,6 +374,8 @@ export const profileSchema = z.object({
 });
 
 export type ProgrammeInput = z.infer<typeof programmeSchema>;
+export type UpdateProgrammeStatusInput = z.infer<typeof updateProgrammeStatusSchema>;
+export type UpdateProgrammeInput = z.infer<typeof updateProgrammeSchema>;
 export type OpportunityInput = z.infer<typeof opportunitySchema>;
 export type ApplicationInput = z.infer<typeof applicationSchema>;
 export type TaskInput = z.infer<typeof taskSchema>;

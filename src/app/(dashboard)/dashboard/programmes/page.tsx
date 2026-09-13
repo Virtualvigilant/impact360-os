@@ -9,6 +9,7 @@ import { Pagination } from '@/components/primitives/pagination';
 import { StatusBadge } from '@/components/primitives/status-badge';
 import { EmptyState, Section } from '@/components/primitives/states';
 import { CreateProgrammeDialog } from '@/components/programmes/create-programme-dialog';
+import { ProgrammeActions } from '@/components/programmes/programme-actions';
 import { Card, CardContent } from '@/components/ui/card';
 
 export const metadata = { title: 'Programmes · ITEK Internship OS' };
@@ -80,6 +81,9 @@ export default async function ProgrammesPage({
                                             <Figure label="Mode" value={programme.work_arrangement} />
                                         </dl>
                                         <StatusBadge status={programme.status} className="shrink-0" />
+                                        {can(session.role, 'programme:edit') && (
+                                            <ProgrammeActions programme={programme} />
+                                        )}
                                     </div>
                                 ))}
                             </CardContent>

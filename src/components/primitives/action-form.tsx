@@ -142,6 +142,8 @@ interface FieldProps {
     errors: Record<string, string[]>;
     hint?: string;
     required?: boolean;
+    disabled?: boolean;
+    readOnly?: boolean;
     defaultValue?: string | number;
 }
 
@@ -180,6 +182,8 @@ export function TextField({ type = 'text', ...props }: FieldProps & { type?: str
                 name={props.name}
                 type={type}
                 defaultValue={props.defaultValue}
+                disabled={props.disabled}
+                readOnly={props.readOnly}
                 aria-invalid={invalid}
                 aria-describedby={invalid ? `${props.name}-error` : undefined}
             />
@@ -196,6 +200,8 @@ export function AreaField({ rows = 3, ...props }: FieldProps & { rows?: number }
                 name={props.name}
                 rows={rows}
                 defaultValue={props.defaultValue}
+                disabled={props.disabled}
+                readOnly={props.readOnly}
                 aria-invalid={invalid}
                 aria-describedby={invalid ? `${props.name}-error` : undefined}
             />
@@ -213,6 +219,7 @@ export function SelectField({
                 id={props.name}
                 name={props.name}
                 defaultValue={props.defaultValue}
+                disabled={props.disabled}
                 className="h-9 w-full rounded-md border bg-background px-3 text-sm"
                 aria-invalid={Boolean(props.errors[props.name])}
             >

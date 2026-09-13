@@ -26,7 +26,7 @@ import {
     UserRoundSearch,
     UsersRound,
 } from 'lucide-react';
-import { ROLE_GROUPS, type AppRole } from './roles';
+import { hasRole, ROLE_GROUPS, type AppRole } from './roles';
 
 export const NAV_SECTIONS = [
     'command',
@@ -138,10 +138,10 @@ export function canAccessRoute(role: AppRole | null | undefined, pathname: strin
     // An unmapped route under /dashboard is denied rather than allowed: adding a page
     // must be a deliberate access decision.
     if (!route) return false;
-    return route.roles.includes(role);
+    return hasRole(role, route.roles);
 }
 
 export function visibleRoutes(role: AppRole | null | undefined): NavRoute[] {
     if (!role) return [];
-    return NAV_ROUTES.filter((route) => route.roles.includes(role));
+    return NAV_ROUTES.filter((route) => hasRole(role, route.roles));
 }

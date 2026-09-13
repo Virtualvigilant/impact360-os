@@ -56,7 +56,10 @@ export const ROLE_GROUPS = {
 export type RoleGroup = keyof typeof ROLE_GROUPS;
 
 export function hasRole(role: AppRole | null | undefined, allowed: readonly AppRole[]): boolean {
-    return role != null && allowed.includes(role);
+    if (!role) return false;
+    // super_admin is the platform superuser — they can do what every role can do.
+    if (role === 'super_admin') return true;
+    return allowed.includes(role);
 }
 
 export function inGroup(role: AppRole | null | undefined, group: RoleGroup): boolean {

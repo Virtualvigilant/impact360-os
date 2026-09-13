@@ -1349,6 +1349,7 @@ create policy profiles_own_read on public.profiles for select using (id = auth.u
 create policy profiles_own_insert on public.profiles for insert with check (id = auth.uid());
 create policy profiles_own_update on public.profiles for update using (id = auth.uid()) with check (id = auth.uid());
 create policy profiles_staff_read on public.profiles for select using (public.is_programme_staff());
+create policy profiles_authenticated_read on public.profiles for select using (auth.role() = 'authenticated' and is_active = true);
 
 create policy opportunities_public_read on public.opportunities for select using (status = 'published');
 create policy programmes_public_read on public.internship_programmes for select using (status in ('open','active'));
@@ -1368,15 +1369,47 @@ create policy recruitment_staff_manage_offers on public.offers for all using (pu
 create policy placements_participant_read on public.placements for select using (
   intern_id = auth.uid() or primary_mentor_id = auth.uid() or supervisor_id = auth.uid() or programme_manager_id = auth.uid()
 );
+create or replace function public.is_project_member(check_project_id uuid, check_user_id uuid)
+returns boolean
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select exists (
+    select 1
+    from public.project_members pm
+    join public.placements p on p.id = pm.placement_id
+    where pm.project_id = check_project_id
+      and p.intern_id = check_user_id
+  );
+$$;
+
 create policy projects_staff_read on public.projects for select using (public.is_programme_staff());
-create policy projects_member_read on public.projects for select using (exists (
-  select 1 from public.project_members pm join public.placements p on p.id = pm.placement_id
-  where pm.project_id = projects.id and p.intern_id = auth.uid()
-));
+create policy projects_member_read on public.projects for select using (
+  public.is_project_member(projects.id, auth.uid())
+  or (
+    projects.programme_id is not null and exists (
+      select 1 from public.placements p
+      where p.programme_id = projects.programme_id and p.intern_id = auth.uid()
+    )
+  )
+);
+create policy project_members_select on public.project_members for select using (
+  public.is_programme_staff()
+  or public.is_project_member(project_members.project_id, auth.uid())
+);
+create policy milestones_select on public.milestones for select using (
+  public.is_programme_staff()
+  or public.is_project_member(milestones.project_id, auth.uid())
+);
 create policy tasks_participant_read on public.tasks for select using (exists (
   select 1 from public.placements p where p.id = tasks.placement_id
   and (p.intern_id = auth.uid() or p.primary_mentor_id = auth.uid() or p.supervisor_id = auth.uid())
 ));
+create policy tasks_project_member_read on public.tasks for select using (
+  tasks.project_id is not null and public.is_project_member(tasks.project_id, auth.uid())
+);
 create policy tasks_supervisor_manage on public.tasks for all using (public.has_any_role(array['super_admin','programme_admin','mentor','supervisor']::public.app_role[])) with check (public.has_any_role(array['super_admin','programme_admin','mentor','supervisor']::public.app_role[]));
 create policy tasks_intern_update on public.tasks for update using (exists (
   select 1 from public.placements p where p.id = tasks.placement_id and p.intern_id = auth.uid()

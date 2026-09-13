@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { FolderKanban } from 'lucide-react';
 import { can, ROLE_GROUPS } from '@/lib/auth/roles';
 import { requireRole } from '@/lib/auth/session';
+import { listOpenProgrammes } from '@/lib/data/programmes';
 import { listProjects } from '@/lib/data/work';
 import { formatDate } from '@/lib/utils/format';
 import { PageHeader } from '@/components/primitives/page-header';
@@ -25,11 +26,14 @@ export default async function ProjectsPage({
     const session = await requireRole([...ROLE_GROUPS.staff, ...ROLE_GROUPS.participants], '/dashboard/projects');
     const params = await searchParams;
 
-    const { data, error, schemaMissing } = await listProjects({
-        search: params.q,
-        status: STATUSES.includes(params.status as never) ? (params.status as (typeof STATUSES)[number]) : undefined,
-        page: Number(params.page) || 1,
-    });
+    const [{ data, error, schemaMissing }, openProgrammes] = await Promise.all([
+        listProjects({
+            search: params.q,
+            status: STATUSES.includes(params.status as never) ? (params.status as (typeof STATUSES)[number]) : undefined,
+            page: Number(params.page) || 1,
+        }),
+        listOpenProgrammes(),
+    ]);
 
     return (
         <div className="mx-auto max-w-6xl space-y-7">
@@ -38,7 +42,11 @@ export default async function ProjectsPage({
                 title="Project workspaces"
                 description="Objectives, teams, milestones and delivery health. Interns contribute to real work here, and the record of that contribution is what a certificate later refers to."
                 icon={FolderKanban}
-                actions={can(session.role, 'project:manage') ? <CreateProjectDialog /> : undefined}
+                actions={
+                    can(session.role, 'project:manage') ? (
+                        <CreateProjectDialog programmes={openProgrammes.map((p) => ({ id: p.id, name: p.name }))} />
+                    ) : undefined
+                }
             />
 
             <FilterBar

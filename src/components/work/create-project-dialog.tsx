@@ -5,7 +5,11 @@ import { createProject } from '@/lib/actions/work';
 import { ActionDialog, AreaField, SelectField, TextField } from '@/components/primitives/action-form';
 import { Button } from '@/components/ui/button';
 
-export function CreateProjectDialog() {
+interface CreateProjectDialogProps {
+    programmes?: { id: string; name: string }[];
+}
+
+export function CreateProjectDialog({ programmes }: CreateProjectDialogProps = {}) {
     return (
         <ActionDialog
             trigger={
@@ -22,7 +26,20 @@ export function CreateProjectDialog() {
         >
             {(errors) => (
                 <>
+                    {programmes && programmes.length > 0 && (
+                        <SelectField
+                            name="programme_id"
+                            label="Internship programme"
+                            errors={errors}
+                            options={[
+                                { value: '', label: 'None (Independent project)' },
+                                ...programmes.map((p) => ({ value: p.id, label: p.name })),
+                            ]}
+                            hint="Optionally link this project to a cohort programme"
+                        />
+                    )}
                     <TextField name="name" label="Project name" errors={errors} required />
+
                     <TextField
                         name="code"
                         label="Code"

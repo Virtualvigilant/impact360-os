@@ -166,3 +166,48 @@ export async function getProject(id: string): Promise<Loaded<ProjectDetail | nul
         };
     });
 }
+
+export interface AvailableIntern {
+    id: string;
+    full_name: string;
+    email: string;
+    avatar_url: string | null;
+    isAssigned: boolean;
+}
+
+export async function listAvailableInterns(projectId: string): Promise<Loaded<AvailableIntern[]>> {
+    return guard<AvailableIntern[]>([], async () => {
+        const supabase = await createServerSupabase();
+        const [internsResult, membersResult] = await Promise.all([
+            supabase
+                .from('profiles')
+                .select('id, full_name, email, avatar_url')
+                .eq('role', 'intern')
+                .eq('is_active', true)
+                .order('full_name', { ascending: true }),
+            supabase
+                .from('project_members')
+                .select('placement_id, placement:placements(intern_id)')
+                .eq('project_id', projectId),
+        ]);
+
+        if (internsResult.error) throw internsResult.error;
+
+        const assignedInternIds = new Set<string>();
+        for (const m of membersResult.data ?? []) {
+            const internId = (m.placement as { intern_id?: string } | null)?.intern_id;
+            if (internId) {
+                assignedInternIds.add(internId);
+            }
+        }
+
+        return (internsResult.data ?? []).map((intern) => ({
+            id: intern.id,
+            full_name: intern.full_name,
+            email: intern.email,
+            avatar_url: intern.avatar_url,
+            isAssigned: assignedInternIds.has(intern.id),
+        }));
+    });
+}
+

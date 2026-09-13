@@ -1,21 +1,29 @@
 import { notFound } from 'next/navigation';
 import { FolderKanban } from 'lucide-react';
-import { ROLE_GROUPS } from '@/lib/auth/roles';
+import { can, ROLE_GROUPS } from '@/lib/auth/roles';
 import { requireRole } from '@/lib/auth/session';
-import { getProject } from '@/lib/data/work';
+import { getProject, listAvailableInterns } from '@/lib/data/work';
 import { formatDate, formatDateRange, humanise } from '@/lib/utils/format';
 import { PageHeader } from '@/components/primitives/page-header';
 import { StatusBadge } from '@/components/primitives/status-badge';
 import { BackLink, Section } from '@/components/primitives/states';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
+import { AssignMemberDialog } from '@/components/work/assign-member-dialog';
+import { RemoveMemberButton } from '@/components/work/remove-member-button';
 
 export const metadata = { title: 'Project · ITEK Internship OS' };
 
 export default async function ProjectPage({ params }: { params: Promise<{ projectId: string }> }) {
-    await requireRole([...ROLE_GROUPS.staff, ...ROLE_GROUPS.participants]);
+    const session = await requireRole([...ROLE_GROUPS.staff, ...ROLE_GROUPS.participants]);
     const { projectId } = await params;
-    const { data, error, schemaMissing } = await getProject(projectId);
+    const [projectResult, internsResult] = await Promise.all([
+        getProject(projectId),
+        listAvailableInterns(projectId),
+    ]);
+    const { data, error, schemaMissing } = projectResult;
+    const availableInterns = internsResult.data ?? [];
+    const canManage = can(session.role, 'project:manage');
 
     if (!error && !schemaMissing && !data) notFound();
 
@@ -59,11 +67,16 @@ export default async function ProjectPage({ params }: { params: Promise<{ projec
 
                         <div className="grid gap-6 lg:grid-cols-2">
                             <Card>
-                                <CardHeader>
-                                    <CardTitle>Team</CardTitle>
-                                    <CardDescription>
-                                        Membership belongs to a placement, so it ends when the internship does.
-                                    </CardDescription>
+                                <CardHeader className="flex flex-row items-start justify-between space-y-0">
+                                    <div>
+                                        <CardTitle>Team</CardTitle>
+                                        <CardDescription>
+                                            Membership belongs to a placement, so it ends when the internship does.
+                                        </CardDescription>
+                                    </div>
+                                    {canManage && (
+                                        <AssignMemberDialog projectId={data.project.id} interns={availableInterns} />
+                                    )}
                                 </CardHeader>
                                 <CardContent>
                                     {data.members.length === 0 ? (
@@ -86,13 +99,23 @@ export default async function ProjectPage({ params }: { params: Promise<{ projec
                                                                 : ''}
                                                         </p>
                                                     </div>
-                                                    {member.left_at && <StatusBadge status="completed" />}
+                                                    <div className="flex items-center gap-2">
+                                                        {member.left_at && <StatusBadge status="completed" />}
+                                                        {canManage && (
+                                                            <RemoveMemberButton
+                                                                projectId={member.project_id}
+                                                                placementId={member.placement_id}
+                                                                memberName={member.placement?.intern?.full_name ?? 'this member'}
+                                                            />
+                                                        )}
+                                                    </div>
                                                 </li>
                                             ))}
                                         </ul>
                                     )}
                                 </CardContent>
                             </Card>
+
 
                             <Card>
                                 <CardHeader>

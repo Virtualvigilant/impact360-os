@@ -275,6 +275,24 @@ export const projectSchema = z.object({
     status: z.enum(['planned', 'active', 'on_hold', 'completed', 'cancelled']).default('planned'),
 });
 
+export const assignProjectMemberSchema = z.object({
+    project_id: uuid,
+    intern_id: uuid,
+    role_title: optional(text(100)),
+    allocation_percent: z.coerce
+        .number()
+        .int()
+        .min(1, 'Allocation must be at least 1%')
+        .max(100, 'Allocation cannot exceed 100%')
+        .default(100),
+});
+
+export const removeProjectMemberSchema = z.object({
+    project_id: uuid,
+    placement_id: uuid,
+});
+
+
 // ─── Development ─────────────────────────────────────────────────────────────
 
 export const checkInSchema = z
@@ -408,5 +426,9 @@ export type UpdateOpportunityStatusInput = z.infer<typeof updateOpportunityStatu
 export type UpdateOpportunityInput = z.infer<typeof updateOpportunitySchema>;
 export type ApplicationInput = z.infer<typeof applicationSchema>;
 export type TaskInput = z.infer<typeof taskSchema>;
+export type ProjectInput = z.infer<typeof projectSchema>;
+export type AssignProjectMemberInput = z.infer<typeof assignProjectMemberSchema>;
+export type RemoveProjectMemberInput = z.infer<typeof removeProjectMemberSchema>;
 export type CheckInInput = z.infer<typeof checkInSchema>;
 export type EvaluationInput = z.infer<typeof evaluationSchema>;
+

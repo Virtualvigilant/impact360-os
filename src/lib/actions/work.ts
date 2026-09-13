@@ -3,7 +3,14 @@
 import { revalidatePath } from 'next/cache';
 import { createServerSupabase } from '@/lib/supabase/server';
 import { canTransition, type TaskStatus } from '@/lib/domain/work';
-import { evidenceSchema, projectSchema, taskSchema, taskTransitionSchema } from '@/lib/validation/schemas';
+import {
+    assignProjectMemberSchema,
+    evidenceSchema,
+    projectSchema,
+    removeProjectMemberSchema,
+    taskSchema,
+    taskTransitionSchema,
+} from '@/lib/validation/schemas';
 import { can } from '@/lib/auth/roles';
 import { action } from './helpers';
 
@@ -107,3 +114,124 @@ export async function createProject(input: unknown) {
         return project.id;
     });
 }
+
+export async function assignProjectMember(input: unknown) {
+    return action({ permission: 'project:manage', schema: assignProjectMemberSchema, input }, async (data) => {
+        const supabase = await createServerSupabase();
+
+        // 1. Fetch project info
+        const { data: project, error: projectError } = await supabase
+            .from('projects')
+            .select('id, programme_id, start_date, target_end_date')
+            .eq('id', data.project_id)
+            .maybeSingle();
+        if (projectError) throw projectError;
+        if (!project) throw new Error('Project not found');
+
+        // 2. Look for existing placement for this intern
+        let placementId: string | null = null;
+        if (project.programme_id) {
+            const { data: existingPlacement } = await supabase
+                .from('placements')
+                .select('id')
+                .eq('intern_id', data.intern_id)
+                .eq('programme_id', project.programme_id)
+                .order('created_at', { ascending: false })
+                .limit(1)
+                .maybeSingle();
+            if (existingPlacement) {
+                placementId = existingPlacement.id;
+            }
+        }
+
+        if (!placementId) {
+            const { data: anyPlacement } = await supabase
+                .from('placements')
+                .select('id')
+                .eq('intern_id', data.intern_id)
+                .order('created_at', { ascending: false })
+                .limit(1)
+                .maybeSingle();
+            if (anyPlacement) {
+                placementId = anyPlacement.id;
+            }
+        }
+
+        // 3. If still no placement, create one
+        if (!placementId) {
+            let programmeId = project.programme_id;
+            if (!programmeId) {
+                const { data: latestProgramme } = await supabase
+                    .from('internship_programmes')
+                    .select('id')
+                    .order('created_at', { ascending: false })
+                    .limit(1)
+                    .maybeSingle();
+                programmeId = latestProgramme?.id ?? null;
+            }
+
+            if (!programmeId) {
+                throw new Error('No internship programme found. Please create a programme first before assigning interns.');
+            }
+
+            const today = new Date().toISOString().slice(0, 10);
+            const futureDate = new Date(Date.now() + 90 * 86400000).toISOString().slice(0, 10);
+
+            const { data: newPlacement, error: placementError } = await supabase
+                .from('placements')
+                .insert({
+                    intern_id: data.intern_id,
+                    programme_id: programmeId,
+                    start_date: project.start_date ?? today,
+                    end_date: project.target_end_date ?? futureDate,
+                    status: 'active',
+                    current_phase: 'in_progress',
+                    risk_level: 'low',
+                })
+                .select('id')
+                .single();
+
+            if (placementError) throw placementError;
+            placementId = newPlacement.id;
+        }
+
+        // 4. Upsert into project_members
+        const { error: memberError } = await supabase
+            .from('project_members')
+            .upsert(
+                {
+                    project_id: data.project_id,
+                    placement_id: placementId,
+                    role_title: data.role_title?.trim() || 'Contributor',
+                    allocation_percent: data.allocation_percent ?? 100,
+                    joined_at: new Date().toISOString(),
+                    left_at: null,
+                },
+                { onConflict: 'project_id,placement_id' },
+            );
+
+        if (memberError) throw memberError;
+
+        revalidatePath(`/dashboard/projects/${data.project_id}`);
+        revalidatePath('/dashboard/projects');
+        revalidatePath('/dashboard/work');
+        return { project_id: data.project_id, placement_id: placementId };
+    });
+}
+
+export async function removeProjectMember(input: unknown) {
+    return action({ permission: 'project:manage', schema: removeProjectMemberSchema, input }, async (data) => {
+        const supabase = await createServerSupabase();
+        const { error } = await supabase
+            .from('project_members')
+            .delete()
+            .eq('project_id', data.project_id)
+            .eq('placement_id', data.placement_id);
+        if (error) throw error;
+        revalidatePath(`/dashboard/projects/${data.project_id}`);
+        revalidatePath('/dashboard/projects');
+        revalidatePath('/dashboard/work');
+        return true;
+    });
+}
+

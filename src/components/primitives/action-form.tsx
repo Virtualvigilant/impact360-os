@@ -145,6 +145,7 @@ interface FieldProps {
     disabled?: boolean;
     readOnly?: boolean;
     defaultValue?: string | number;
+    placeholder?: string;
 }
 
 function FieldShell({
@@ -181,6 +182,7 @@ export function TextField({ type = 'text', ...props }: FieldProps & { type?: str
                 id={props.name}
                 name={props.name}
                 type={type}
+                placeholder={props.placeholder}
                 defaultValue={props.defaultValue}
                 disabled={props.disabled}
                 readOnly={props.readOnly}
@@ -199,6 +201,7 @@ export function AreaField({ rows = 3, ...props }: FieldProps & { rows?: number }
                 id={props.name}
                 name={props.name}
                 rows={rows}
+                placeholder={props.placeholder}
                 defaultValue={props.defaultValue}
                 disabled={props.disabled}
                 readOnly={props.readOnly}
